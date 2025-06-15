@@ -1,0 +1,2 @@
+../Core/Src/pal_gpio.c:43:6:pal_gpio_set_high	16	static
+../Core/Src/pal_gpio.c:50:6:pal_gpio_set_low	16	static

@@ -1,0 +1,2 @@
+../Core/Src/pal_os_datastore.c:66:14:pal_os_datastore_write	24	static
+../Core/Src/pal_os_datastore.c:126:14:pal_os_datastore_read	32	static

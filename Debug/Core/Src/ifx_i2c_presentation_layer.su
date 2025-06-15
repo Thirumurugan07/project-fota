@@ -1,0 +1,11 @@
+../Core/Src/ifx_i2c_presentation_layer.c:190:21:ifx_i2c_prl_init	24	static
+../Core/Src/ifx_i2c_presentation_layer.c:228:21:ifx_i2c_prl_close	32	static
+../Core/Src/ifx_i2c_presentation_layer.c:260:21:ifx_i2c_prl_transceive	32	static
+../Core/Src/ifx_i2c_presentation_layer.c:315:31:ifx_i2c_prl_prf	136	static
+../Core/Src/ifx_i2c_presentation_layer.c:349:16:ifx_i2c_prl_form_associated_data	24	static
+../Core/Src/ifx_i2c_presentation_layer.c:360:31:ifx_i2c_prl_encrypt_msg	64	static
+../Core/Src/ifx_i2c_presentation_layer.c:395:31:ifx_i2c_prl_decrypt_msg	64	static
+../Core/Src/ifx_i2c_presentation_layer.c:432:31:ifx_i2c_prl_send_alert	32	static
+../Core/Src/ifx_i2c_presentation_layer.c:465:31:ifx_i2c_prl_do_handshake	48	static
+../Core/Src/ifx_i2c_presentation_layer.c:637:31:ifx_i2c_prl_do_manage_context	88	static
+../Core/Src/ifx_i2c_presentation_layer.c:808:16:ifx_i2c_prl_event_handler	104	static
