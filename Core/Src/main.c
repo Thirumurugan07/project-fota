@@ -29,11 +29,15 @@
 #include "optiga/pal/pal_os_event.h"
 #include "optiga/pal/pal_os_timer.h"
 #include <stdio.h>
+#include "etx_ota_update.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+#define MAJOR 1   // BL Major version Number
+#define MINOR 3   // BL Minor version Number
+const uint8_t BL_Version[2] = { MAJOR, MINOR };
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -65,7 +69,7 @@ static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void goto_application( void );
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -142,78 +146,6 @@ void optiga_main_logic(void)
 
     HAL_Delay(3000);
     example_optiga_util_read_data();
-
-    // Example: Write Data
-//      uint8_t data_to_write[] = { 0xCA, 0xFE, 0xBA, 0xBE };
-//      uint16_t object_id = 0xE0E1;
-//      optiga_lib_status = OPTIGA_LIB_BUSY;
-//
-//      optiga_util_write_data(me_util,
-//                             OPTIGA_UTIL_ERASE_AND_WRITE,
-//                             object_id,
-//                             0,
-//                             data_to_write,
-//                             sizeof(data_to_write));
-//
-//      while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//      {
-//          pal_os_event_trigger_registered_callback();
-//      }
-//
-//      if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-//      {
-//          printf("Write successful to object 0x%04X.\r\n", object_id);
-//      }
-//      else
-//      {
-//          printf("Write failed: 0x%04X\r\n", optiga_lib_status);
-//      }
-//
-//
-//    HAL_Delay(500);
-//
-//       // Example: Read Data
-//       uint8_t data_read[64];
-//       uint16_t bytes_read = sizeof(data_read);
-//       optiga_lib_status = OPTIGA_LIB_BUSY;
-//
-//       optiga_util_read_data(me_util,
-//                             object_id,
-//                             0,
-//                             data_read,
-//                             &bytes_read);
-//
-//       while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//       {
-//           pal_os_event_trigger_registered_callback();
-//       }
-//
-//       if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-//       {
-//           printf("Read successful (%d bytes): ", bytes_read);
-//           for (int i = 0; i < bytes_read; i++)
-//           {
-//               printf("%02X ", data_read[i]);
-//           }
-//           printf("\r\n");
-//       }
-//       else
-//       {
-//           printf("Read failed: 0x%04X\r\n", optiga_lib_status);
-//       }
-//
-
-
-
-
-//    // Clean up
-//    optiga_util_close_application(me_util, 0);
-//    while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//    {
-//        pal_os_event_trigger_registered_callback();
-//    }
-//
-//    optiga_util_destroy(me_util);
 }
 
 
@@ -267,8 +199,48 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM2_IRQn);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET );    //Green LED OFF
 
-  HAL_Delay(1000);
+  printf("Starting Bootloader(%d.%d)\r\n", BL_Version[0], BL_Version[1] );
+  GPIO_PinState OTA_Pin_state;
+       uint32_t end_tick = HAL_GetTick() + 3000;   // from now to 3 Seconds
+
+       printf("Press the User Button PC13 to trigger OTA update...\r\n");
+       do
+       {
+         OTA_Pin_state = HAL_GPIO_ReadPin( GPIOC, GPIO_PIN_13 );
+         uint32_t current_tick = HAL_GetTick();
+
+         /* Check the button is pressed or not for 3seconds */
+         if( ( OTA_Pin_state != GPIO_PIN_SET ) || ( current_tick > end_tick ) )
+         {
+           /* Either timeout or Button is pressed */
+           break;
+         }
+       }while( 1 );
+
+       /*Start the Firmware or Application update */
+       if( OTA_Pin_state == GPIO_PIN_RESET )
+       {
+         printf("Starting Firmware Download!!!\r\n");
+         /* OTA Request. Receive the data from the UART4 and flash */
+         if( etx_ota_download_and_flash() != ETX_OTA_EX_OK )
+         {
+           /* Error. Don't process. */
+           printf("OTA Update : ERROR!!! HALT!!!\r\n");
+           while( 1 );
+         }
+         else
+         {
+           /* Reset to load the new application */
+           printf("Firmware update is done!!! Rebooting...\r\n");
+           HAL_NVIC_SystemReset();
+         }
+       }
+
+
+
+
       printf("Powering ON OPTIGA Trust M...\r\n");
 
       /* Power ON the OPTIGA Trust M chip */
@@ -287,7 +259,7 @@ int main(void)
       /* Execute main OPTIGA logic (write, read, LED control) */
       HAL_Delay(100);
       optiga_main_logic();
-
+      goto_application();
 
   /* USER CODE END 2 */
 
@@ -514,7 +486,38 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void goto_application(void)
+{
+    printf("Jumping to application...\r\n");
+    HAL_Delay(1000);
 
+    uint32_t app_stack = *(volatile uint32_t*)ETX_APP_FLASH_ADDR;
+    uint32_t app_reset_handler = *(volatile uint32_t*)(ETX_APP_FLASH_ADDR + 4);
+
+    // Check if the app address is valid (optional safety check)
+    if ((app_stack & 0x2FFE0000) != 0x20000000) {
+        printf("Invalid application stack pointer.\r\n");
+        return;
+    }
+
+    // Deinit all HAL and peripherals
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+    __disable_irq();
+
+    // Set main stack pointer
+    __set_MSP(app_stack);
+
+    // Set vector table location (important for interrupts to work correctly)
+    SCB->VTOR = ETX_APP_FLASH_ADDR;
+
+    // Jump to application reset handler
+    void (*app_entry)(void) = (void (*)(void))app_reset_handler;
+    app_entry();
+
+    // Should never return here
+    while(1);
+}
 /* USER CODE END 4 */
 
 /**

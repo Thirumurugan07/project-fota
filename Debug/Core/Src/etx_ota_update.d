@@ -1,4 +1,5 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
+Core/Src/etx_ota_update.o: ../Core/Src/etx_ota_update.c \
+ ../Core/Inc/etx_ota_update.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -28,23 +29,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../optiga/include/optiga/optiga_example.h \
- ../optiga/include/optiga/optiga_lib_config.h \
- ../optiga/include/optiga/optiga_lib_config_m_v3.h \
- ../optiga/include/optiga/common/optiga_lib_logger.h \
- ../optiga/include/optiga/common/optiga_lib_types.h \
- ../optiga/include/optiga/optiga_util.h \
- ../optiga/include/optiga/cmd/optiga_cmd.h \
- ../optiga/include/optiga/common/optiga_lib_common.h \
- ../optiga/include/optiga/optiga_lib_config.h \
- ../optiga/include/optiga/common/optiga_lib_return_codes.h \
- ../optiga/include/optiga/pal/pal.h \
- ../optiga/include/optiga/pal/pal_i2c.h \
- ../optiga/include/optiga/pal/pal.h \
- ../optiga/include/optiga/pal/pal_gpio.h \
- ../optiga/include/optiga/pal/pal_os_event.h \
- ../optiga/include/optiga/pal/pal_os_timer.h ../Core/Inc/etx_ota_update.h
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
+../Core/Inc/etx_ota_update.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -76,20 +62,3 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-../optiga/include/optiga/optiga_example.h:
-../optiga/include/optiga/optiga_lib_config.h:
-../optiga/include/optiga/optiga_lib_config_m_v3.h:
-../optiga/include/optiga/common/optiga_lib_logger.h:
-../optiga/include/optiga/common/optiga_lib_types.h:
-../optiga/include/optiga/optiga_util.h:
-../optiga/include/optiga/cmd/optiga_cmd.h:
-../optiga/include/optiga/common/optiga_lib_common.h:
-../optiga/include/optiga/optiga_lib_config.h:
-../optiga/include/optiga/common/optiga_lib_return_codes.h:
-../optiga/include/optiga/pal/pal.h:
-../optiga/include/optiga/pal/pal_i2c.h:
-../optiga/include/optiga/pal/pal.h:
-../optiga/include/optiga/pal/pal_gpio.h:
-../optiga/include/optiga/pal/pal_os_event.h:
-../optiga/include/optiga/pal/pal_os_timer.h:
-../Core/Inc/etx_ota_update.h:
