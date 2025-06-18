@@ -1,5 +1,5 @@
 Core/Src/example_optiga_util_write_data.o: \
- /Users/thirumurugans/Downloads/example_optiga_util_write_data.c \
+ ../Core/Src/example_optiga_util_write_data.c \
  ../optiga/include/optiga/optiga_example.h \
  ../optiga/include/optiga/optiga_lib_config.h \
  ../optiga/include/optiga/optiga_lib_config_m_v3.h \

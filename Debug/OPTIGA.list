@@ -9319,7 +9319,7 @@ bool verify_bootloader_hash(optiga_util_t * util)
  8003e02:	9300      	str	r3, [sp, #0]
  8003e04:	4b27      	ldr	r3, [pc, #156]	@ (8003ea4 <verify_bootloader_hash+0x120>)
  8003e06:	2200      	movs	r2, #0
- 8003e08:	f44f 4162 	mov.w	r1, #57856	@ 0xe200
+ 8003e08:	f24e 01e8 	movw	r1, #57576	@ 0xe0e8
  8003e0c:	6878      	ldr	r0, [r7, #4]
  8003e0e:	f002 f8d5 	bl	8005fbc <optiga_util_read_data>
 

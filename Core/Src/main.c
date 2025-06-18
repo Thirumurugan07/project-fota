@@ -35,7 +35,7 @@
 
 #define BOOTLOADER_START_ADDR 0x08000000U
 #define BOOTLOADER_SIZE       (128 * 1024U)
-#define HASH_OID              0xE200  // user object, adjust as needed
+#define HASH_OID              0xE0E8  // user object, adjust as needed
 
 static uint8_t expected_hash[32];
 static uint8_t calc_hash[32];

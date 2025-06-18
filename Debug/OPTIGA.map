@@ -440,19 +440,19 @@ Discarded input sections
  .text          0x00000000        0x0 ./Core/Src/example_optiga_util_write_data.o
  .data          0x00000000        0x0 ./Core/Src/example_optiga_util_write_data.o
  .bss           0x00000000        0x0 ./Core/Src/example_optiga_util_write_data.o
- .rodata.trust_anchor
-                0x00000000      0x282 ./Core/Src/example_optiga_util_write_data.o
+ .data.bootloader_hash
+                0x00000000       0x20 ./Core/Src/example_optiga_util_write_data.o
  .rodata.metadata
-                0x00000000        0x7 ./Core/Src/example_optiga_util_write_data.o
+                0x00000000        0x5 ./Core/Src/example_optiga_util_write_data.o
  .bss.optiga_lib_status
                 0x00000000        0x2 ./Core/Src/example_optiga_util_write_data.o
  .text.optiga_util_callback
                 0x00000000       0x24 ./Core/Src/example_optiga_util_write_data.o
- .rodata        0x00000000      0x120 ./Core/Src/example_optiga_util_write_data.o
+ .rodata        0x00000000       0xbc ./Core/Src/example_optiga_util_write_data.o
  .text.example_optiga_util_write_data
-                0x00000000      0x128 ./Core/Src/example_optiga_util_write_data.o
- .debug_info    0x00000000      0x527 ./Core/Src/example_optiga_util_write_data.o
- .debug_abbrev  0x00000000      0x228 ./Core/Src/example_optiga_util_write_data.o
+                0x00000000       0xcc ./Core/Src/example_optiga_util_write_data.o
+ .debug_info    0x00000000      0x4e6 ./Core/Src/example_optiga_util_write_data.o
+ .debug_abbrev  0x00000000      0x224 ./Core/Src/example_optiga_util_write_data.o
  .debug_aranges
                 0x00000000       0x28 ./Core/Src/example_optiga_util_write_data.o
  .debug_rnglists
@@ -498,8 +498,8 @@ Discarded input sections
  .debug_macro   0x00000000       0xba ./Core/Src/example_optiga_util_write_data.o
  .debug_macro   0x00000000       0x52 ./Core/Src/example_optiga_util_write_data.o
  .debug_macro   0x00000000       0x24 ./Core/Src/example_optiga_util_write_data.o
- .debug_line    0x00000000      0x711 ./Core/Src/example_optiga_util_write_data.o
- .debug_str     0x00000000     0x97eb ./Core/Src/example_optiga_util_write_data.o
+ .debug_line    0x00000000      0x6e2 ./Core/Src/example_optiga_util_write_data.o
+ .debug_str     0x00000000     0x97c0 ./Core/Src/example_optiga_util_write_data.o
  .comment       0x00000000       0x44 ./Core/Src/example_optiga_util_write_data.o
  .debug_frame   0x00000000       0x60 ./Core/Src/example_optiga_util_write_data.o
  .ARM.attributes

@@ -41,11 +41,6 @@
 			<location>/Users/thirumurugans/Downloads/example_optiga_util_read_data.c</location>
 		</link>
 		<link>
-			<name>Core/Src/example_optiga_util_write_data.c</name>
-			<type>1</type>
-			<location>/Users/thirumurugans/Downloads/example_optiga_util_write_data.c</location>
-		</link>
-		<link>
 			<name>Core/Src/optiga_cmd.c</name>
 			<type>1</type>
 			<location>/Users/thirumurugans/Developer/Projects/FOTA/OPTIGA/optiga/cmd/optiga_cmd.c</location>
