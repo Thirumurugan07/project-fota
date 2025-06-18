@@ -140,8 +140,7 @@ void optiga_main_logic(void)
 
     example_optiga_util_write_data();
 
-    HAL_Delay(3000);
-    example_optiga_util_read_data();
+
 
     // Example: Write Data
 //      uint8_t data_to_write[] = { 0xCA, 0xFE, 0xBA, 0xBE };
