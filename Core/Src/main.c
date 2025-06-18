@@ -33,8 +33,10 @@
 #include "etx_ota_update.h"
 #include "mbedtls/sha256.h"
 
-#define BOOTLOADER_START_ADDR 0x08000000U
-#define BOOTLOADER_SIZE       (128 * 1024U)
+#define BOOTLOADER_START_ADDR  0x08000000
+#define BOOTLOADER_TOTAL_SIZE  (128 * 1024) // 16 KB
+#define SHA_SIZE               32
+#define HASH_CALC_LEN          (BOOTLOADER_TOTAL_SIZE - SHA_SIZE)
 #define HASH_OID              0xE0E8  // user object, adjust as needed
 
 static uint8_t expected_hash[32];
@@ -113,18 +115,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 bool verify_bootloader_hash(optiga_util_t * util)
 {
     mbedtls_sha256_context ctx;
-    mbedtls_sha256_init(&ctx);
 
     memset(expected_hash, 0, sizeof(expected_hash));
     memset(calc_hash, 0, sizeof(calc_hash));
 
-    uint8_t * ptr = (uint8_t *)BOOTLOADER_START_ADDR;
-    if (mbedtls_sha256_starts_ret(&ctx, 0) != 0 ||
-        mbedtls_sha256_update_ret(&ctx, ptr, BOOTLOADER_SIZE) != 0 ||
-        mbedtls_sha256_finish_ret(&ctx, calc_hash) != 0) {
-        printf("SHA256 computation failed!\n");
-        return false;
-    }
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts_ret(&ctx, 0);
+    const uint8_t *bl_ptr = (const uint8_t*)BOOTLOADER_START_ADDR;
+    mbedtls_sha256_update_ret(&ctx, bl_ptr, HASH_CALC_LEN);
+    mbedtls_sha256_finish_ret(&ctx, calc_hash);
 
     optiga_lib_status = OPTIGA_LIB_BUSY;
     hash_len = sizeof(expected_hash); // Important: reset length before read
