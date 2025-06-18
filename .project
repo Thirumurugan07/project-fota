@@ -75,5 +75,20 @@
 			<type>1</type>
 			<location>/Users/thirumurugans/Developer/Projects/FOTA/OPTIGA/optiga/util/optiga_util.c</location>
 		</link>
+		<link>
+			<name>Core/Src/platform.c</name>
+			<type>1</type>
+			<location>/Users/thirumurugans/Downloads/platform.c</location>
+		</link>
+		<link>
+			<name>Core/Src/platform_util.c</name>
+			<type>1</type>
+			<location>/Users/thirumurugans/Downloads/platform_util.c</location>
+		</link>
+		<link>
+			<name>Core/Src/sha256.c</name>
+			<type>1</type>
+			<location>/Users/thirumurugans/Downloads/sha256.c</location>
+		</link>
 	</linkedResources>
 </projectDescription>

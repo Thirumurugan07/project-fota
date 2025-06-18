@@ -29,8 +29,17 @@
 #include "optiga/pal/pal_os_event.h"
 #include "optiga/pal/pal_os_timer.h"
 #include <stdio.h>
+#include <stdbool.h>
 #include "etx_ota_update.h"
+#include "mbedtls/sha256.h"
 
+#define BOOTLOADER_START_ADDR 0x08000000U
+#define BOOTLOADER_SIZE       (128 * 1024U)
+#define HASH_OID              0xE200  // user object, adjust as needed
+
+static uint8_t expected_hash[32];
+static uint8_t calc_hash[32];
+static uint16_t hash_len = sizeof(expected_hash);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -100,6 +109,49 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         pal_os_event_timer_tick();
     }
 }
+
+bool verify_bootloader_hash(optiga_util_t * util)
+{
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+
+    memset(expected_hash, 0, sizeof(expected_hash));
+    memset(calc_hash, 0, sizeof(calc_hash));
+
+    uint8_t * ptr = (uint8_t *)BOOTLOADER_START_ADDR;
+    if (mbedtls_sha256_starts_ret(&ctx, 0) != 0 ||
+        mbedtls_sha256_update_ret(&ctx, ptr, BOOTLOADER_SIZE) != 0 ||
+        mbedtls_sha256_finish_ret(&ctx, calc_hash) != 0) {
+        printf("SHA256 computation failed!\n");
+        return false;
+    }
+
+    optiga_lib_status = OPTIGA_LIB_BUSY;
+    hash_len = sizeof(expected_hash); // Important: reset length before read
+    optiga_util_read_data(util, HASH_OID, 0, expected_hash, &hash_len);
+
+    while (optiga_lib_status == OPTIGA_LIB_BUSY)
+        pal_os_event_trigger_registered_callback();
+
+    if (optiga_lib_status != OPTIGA_LIB_SUCCESS || hash_len != 32) {
+        printf("OPTIGA read error! 0x%04X len=%u\n", optiga_lib_status, hash_len);
+        return false;
+    }
+
+    printf("Calculated Hash: ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02X", calc_hash[i]);
+    }
+    printf("\n");
+
+    if (memcmp(calc_hash, expected_hash, 32) != 0) {
+        printf("Hash mismatch!\n");
+        return false;
+    }
+
+    printf("Bootloader hash verified.\n");
+    return true;
+}
 void optiga_main_logic(void)
 {
     optiga_util_t *me_util = NULL;
@@ -142,10 +194,14 @@ void optiga_main_logic(void)
 
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);  // Turn ON LED if you want
 
-    example_optiga_util_write_data();
-
-    HAL_Delay(3000);
-    example_optiga_util_read_data();
+    if (verify_bootloader_hash(me_util)) {
+             goto_application();
+         } else {
+             while (1) {
+                 HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14); // blink red LED
+                 HAL_Delay(500);
+             }
+         }
 }
 
 
@@ -259,7 +315,7 @@ int main(void)
       /* Execute main OPTIGA logic (write, read, LED control) */
       HAL_Delay(100);
       optiga_main_logic();
-      goto_application();
+
 
   /* USER CODE END 2 */
 
@@ -267,7 +323,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

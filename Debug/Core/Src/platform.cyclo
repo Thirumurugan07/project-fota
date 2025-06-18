@@ -1,0 +1,6 @@
+/Users/thirumurugans/Downloads/platform.c:64:8:mbedtls_calloc	1
+/Users/thirumurugans/Downloads/platform.c:69:6:mbedtls_free	1
+/Users/thirumurugans/Downloads/platform.c:74:5:mbedtls_platform_set_calloc_free	1
+/Users/thirumurugans/Downloads/platform.c:159:5:mbedtls_platform_set_printf	1
+/Users/thirumurugans/Downloads/platform.c:332:5:mbedtls_platform_setup	1
+/Users/thirumurugans/Downloads/platform.c:342:6:mbedtls_platform_teardown	1
