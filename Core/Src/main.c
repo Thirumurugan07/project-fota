@@ -142,6 +142,10 @@ bool verify_bootloader_hash(optiga_util_t * util)
         printf("%02X", calc_hash[i]);
     }
     printf("\n");
+    printf("Calculated Hash: ");
+       for (int i = 0; i < 32; i++) {
+           printf("%02X", expected_hash[i]);
+       }
 
     if (memcmp(calc_hash, expected_hash, 32) != 0) {
         printf("Hash mismatch!\n");
