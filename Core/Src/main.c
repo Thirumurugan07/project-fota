@@ -34,9 +34,8 @@
 #include "mbedtls/sha256.h"
 
 #define BOOTLOADER_START_ADDR  0x08000000
-#define BOOTLOADER_TOTAL_SIZE  (128 * 1024) // 16 KB
 #define SHA_SIZE               32
-#define HASH_CALC_LEN          (BOOTLOADER_TOTAL_SIZE - SHA_SIZE)
+#define HASH_CALC_LEN          (67112)
 #define HASH_OID              0xE0E8  // user object, adjust as needed
 
 static uint8_t expected_hash[32];
