@@ -1,0 +1,4 @@
+../Drivers/CMSIS/Include/core_cm4.h:1938:34:__NVIC_SystemReset	4	static,ignoring_inline_asm
+../Core/Src/menu.c:33:6:serial_download	24	static
+../Core/Src/menu.c:74:6:serial_upload	16	static
+../Core/Src/menu.c:100:6:main_menu	24	static,ignoring_inline_asm

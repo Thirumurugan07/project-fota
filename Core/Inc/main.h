@@ -53,7 +53,11 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+extern CRC_HandleTypeDef hcrc;
+extern UART_HandleTypeDef huart2;
 
+#define UartHandle huart2
+#define CrcHandle hcrc
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

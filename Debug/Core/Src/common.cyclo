@@ -1,0 +1,4 @@
+../Core/Src/common.c:16:6:int_to_str	4
+../Core/Src/common.c:40:10:str_to_int	28
+../Core/Src/common.c:114:6:serial_put_string	2
+../Core/Src/common.c:130:19:serial_put_byte	2

@@ -1,0 +1,6 @@
+../Core/Src/flash_if.c:5:10:get_sector	16	static
+../Core/Src/flash_if.c:22:6:FLASH_IF_init	8	static
+../Core/Src/flash_if.c:41:10:FLASH_IF_erase	96	static
+../Core/Src/flash_if.c:84:10:FLASH_IF_write	32	static
+../Core/Src/flash_if.c:124:10:FLASH_IF_get_write_protection_status	40	static
+../Core/Src/flash_if.c:144:10:FLASH_IF_write_protection_config	48	static

@@ -21,19 +21,25 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "optiga/optiga_example.h"
 #include "optiga/optiga_util.h"
 #include "optiga/pal/pal.h"
-#include "optiga/pal/pal_i2c.h"
-#include "optiga/pal/pal_gpio.h"
 #include "optiga/pal/pal_os_event.h"
 #include "optiga/pal/pal_os_timer.h"
+#include "optiga/pal/pal_gpio.h"
+#include "optiga/pal/pal_i2c.h"
+#include "ymodem/menu.h"
 #include <stdio.h>
+#include <stdbool.h>
+
+static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+#define MAJOR 1   // BL Major version Number
+#define MINOR 3   // BL Minor version Number
+const uint8_t BL_Version[2] = { MAJOR, MINOR };
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -47,6 +53,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CRC_HandleTypeDef hcrc;
+
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim2;
@@ -63,169 +71,36 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_CRC_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
+static void goto_application( void );
+static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
+static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
+
+#ifdef __GNUC__
+  /* With GCC, small printf (option LD Linker->Libraries->Small printf
+     set to 'Yes') calls __io_putchar() */
+int __io_putchar(int ch)
+#else
+int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+{
+  /* Place your implementation of fputc here */
+  /* e.g. write a character to the UART3 and Loop until the end of transmission */
+  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+
+  return ch;
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#ifdef __GNUC__
-int __io_putchar(int ch)
-{
-    HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
-    return ch;
-}
-#endif
-
-extern pal_gpio_t optiga_vdd_0;
-extern pal_gpio_t optiga_reset_0;
-extern pal_i2c_t optiga_pal_i2c_context_0;
-static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
-
-// Async callback
-static void optiga_util_callback(void *context, optiga_lib_status_t return_status)
-{
-    optiga_lib_status = return_status;
-}
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2)
-    {
-        pal_os_event_timer_tick();
-    }
-}
-void optiga_main_logic(void)
-{
-    optiga_util_t *me_util = NULL;
-    optiga_lib_status_t return_status = OPTIGA_UTIL_ERROR;
-
-    me_util = optiga_util_create(0, optiga_util_callback, NULL);
-    if (!me_util)
-    {
-        printf("Failed to create OPTIGA util instance.\r\n");
-        return;
-    }
-
-    // Retry loop to initialize OPTIGA
-    while (1)
-    {
-        optiga_lib_status = OPTIGA_LIB_BUSY;
-        return_status = optiga_util_open_application(me_util, 0);
-        if (return_status != OPTIGA_LIB_SUCCESS)
-        {
-            printf("optiga_util_open_application() failed immediately. Retrying...\r\n");
-            continue;
-        }
-        HAL_Delay(100);
-        while (optiga_lib_status == OPTIGA_LIB_BUSY)
-        {
-            pal_os_event_trigger_registered_callback(); // CRUCIAL for bare metal
-        }
-        HAL_Delay(100);
-        if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-        {
-            printf("OPTIGA Trust M initialized successfully.\r\n");
-            break;
-        }
-        else
-        {
-            printf("OPTIGA init async failed: 0x%04X. Retrying...\r\n", optiga_lib_status);
-            HAL_Delay(2000);
-        }
-    }
-
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);  // Turn ON LED if you want
-
-    example_optiga_util_write_data();
-
-
-
-    // Example: Write Data
-//      uint8_t data_to_write[] = { 0xCA, 0xFE, 0xBA, 0xBE };
-//      uint16_t object_id = 0xE0E1;
-//      optiga_lib_status = OPTIGA_LIB_BUSY;
-//
-//      optiga_util_write_data(me_util,
-//                             OPTIGA_UTIL_ERASE_AND_WRITE,
-//                             object_id,
-//                             0,
-//                             data_to_write,
-//                             sizeof(data_to_write));
-//
-//      while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//      {
-//          pal_os_event_trigger_registered_callback();
-//      }
-//
-//      if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-//      {
-//          printf("Write successful to object 0x%04X.\r\n", object_id);
-//      }
-//      else
-//      {
-//          printf("Write failed: 0x%04X\r\n", optiga_lib_status);
-//      }
-//
-//
-//    HAL_Delay(500);
-//
-//       // Example: Read Data
-//       uint8_t data_read[64];
-//       uint16_t bytes_read = sizeof(data_read);
-//       optiga_lib_status = OPTIGA_LIB_BUSY;
-//
-//       optiga_util_read_data(me_util,
-//                             object_id,
-//                             0,
-//                             data_read,
-//                             &bytes_read);
-//
-//       while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//       {
-//           pal_os_event_trigger_registered_callback();
-//       }
-//
-//       if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-//       {
-//           printf("Read successful (%d bytes): ", bytes_read);
-//           for (int i = 0; i < bytes_read; i++)
-//           {
-//               printf("%02X ", data_read[i]);
-//           }
-//           printf("\r\n");
-//       }
-//       else
-//       {
-//           printf("Read failed: 0x%04X\r\n", optiga_lib_status);
-//       }
-//
-
-
-
-
-//    // Clean up
-//    optiga_util_close_application(me_util, 0);
-//    while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//    {
-//        pal_os_event_trigger_registered_callback();
-//    }
-//
-//    optiga_util_destroy(me_util);
-}
-
-
-void I2C_Scan(I2C_HandleTypeDef *hi2c) {
-    printf("Scanning I2C...\r\n");
-    for (uint8_t addr = 1; addr < 128; addr++) {
-        if (HAL_I2C_IsDeviceReady(hi2c, addr << 1, 1, 10) == HAL_OK) {
-            printf("Device found at 0x%02X\r\n", addr);
-        }
-    }
-}
-
-
+extern pFunction jumpToApplication;
+extern uint32_t jumpAddress;
+/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -259,6 +134,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
+  MX_CRC_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
@@ -266,26 +142,47 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM2_IRQn);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET );    //Green LED OFF
 
-  HAL_Delay(1000);
-      printf("Powering ON OPTIGA Trust M...\r\n");
 
-      /* Power ON the OPTIGA Trust M chip */
-      pal_gpio_set_high(&optiga_vdd_0);
-      printf("Resetting OPTIGA...\r\n");
-      pal_gpio_set_low(&optiga_reset_0);
-      HAL_Delay(10);
-      pal_gpio_set_high(&optiga_reset_0);
-      HAL_Delay(10);
 
-      /* Optional: Scan I2C to check if device responds */
-      I2C_Scan(&hi2c1);
+   // optiga_main_logic();
+    /* Check the GPIO for 3 seconds */
+      GPIO_PinState OTA_Pin_state;
+      uint32_t end_tick = HAL_GetTick() + 3000;   // from now to 3 Seconds
 
-      printf("Starting OPTIGA Trust M logic...\r\n");
+      printf("Press the User Button PC13 to trigger OTA update...\r\n");
+      do
+      {
+        OTA_Pin_state = HAL_GPIO_ReadPin( GPIOC, GPIO_PIN_13 );
+        uint32_t current_tick = HAL_GetTick();
 
-      /* Execute main OPTIGA logic (write, read, LED control) */
-      HAL_Delay(100);
-      optiga_main_logic();
+        /* Check the button is pressed or not for 3seconds */
+        if( ( OTA_Pin_state != GPIO_PIN_SET ) || ( current_tick > end_tick ) )
+        {
+          /* Either timeout or Button is pressed */
+          break;
+        }
+      }while( 1 );
+      if( OTA_Pin_state == GPIO_PIN_RESET ) {
+    	  /* Initialise Flash */
+    	 	  FLASH_IF_init();
+    	 	  /* Display main menu */
+    	 	  main_menu ();
+      }
+      else {
+    	  /* Test if user code is programmed starting from address "APPLICATION_ADDRESS" */
+    	 	  if (((*(__IO uint32_t*)APPLICATION_ADDRESS) & 0x2FFE0000 ) == 0x20000000)
+    	 	  {
+    	 		  /* Jump to user application */
+    	 		  jumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
+    	 		  jumpToApplication = (pFunction) jumpAddress;
+    	 		  /* Initialize user application's Stack Pointer */
+    	 		  __set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
+    	 		  jumpToApplication();
+    	 	  }
+      }
+
 
 
   /* USER CODE END 2 */
@@ -294,7 +191,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -360,6 +256,32 @@ static void MX_NVIC_Init(void)
 }
 
 /**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
+}
+
+/**
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -414,9 +336,9 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 8399;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 9;
+  htim2.Init.Period = 4294967295;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -514,6 +436,96 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+// Async callback
+static void optiga_util_callback(void *context, optiga_lib_status_t return_status)
+{
+    optiga_lib_status = return_status;
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM2)
+    {
+        pal_os_event_timer_tick();
+    }
+}
+void optiga_main_logic(void)
+{
+    optiga_util_t *me_util = NULL;
+    optiga_lib_status_t return_status = OPTIGA_UTIL_ERROR;
+
+    me_util = optiga_util_create(0, optiga_util_callback, NULL);
+    if (!me_util)
+    {
+        printf("Failed to create OPTIGA util instance.\r\n");
+        return;
+    }
+
+    // Retry loop to initialize OPTIGA
+    while (1)
+    {
+        optiga_lib_status = OPTIGA_LIB_BUSY;
+        return_status = optiga_util_open_application(me_util, 0);
+        if (return_status != OPTIGA_LIB_SUCCESS)
+        {
+            printf("optiga_util_open_application() failed immediately. Retrying...\r\n");
+            continue;
+        }
+        HAL_Delay(100);
+        while (optiga_lib_status == OPTIGA_LIB_BUSY)
+        {
+            pal_os_event_trigger_registered_callback(); // CRUCIAL for bare metal
+        }
+        HAL_Delay(100);
+        if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
+        {
+            printf("OPTIGA Trust M initialized successfully.\r\n");
+            break;
+        }
+        else
+        {
+            printf("OPTIGA init async failed: 0x%04X. Retrying...\r\n", optiga_lib_status);
+            HAL_Delay(2000);
+        }
+    }
+
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);  // Turn ON LED if you want
+
+}
+
+
+//static void goto_application(void)
+//{
+//    printf("Jumping to application...\r\n");
+//    HAL_Delay(1000);
+//
+//    uint32_t app_stack = *(volatile uint32_t*)ETX_APP_FLASH_ADDR;
+//    uint32_t app_reset_handler = *(volatile uint32_t*)(ETX_APP_FLASH_ADDR + 4);
+//
+//    // Check if the app address is valid (optional safety check)
+//    if ((app_stack & 0x2FFE0000) != 0x20000000) {
+//        printf("Invalid application stack pointer.\r\n");
+//        return;
+//    }
+//
+//    // Deinit all HAL and peripherals
+//    HAL_RCC_DeInit();
+//    HAL_DeInit();
+//    __disable_irq();
+//
+//    // Set main stack pointer
+//    __set_MSP(app_stack);
+//
+//    // Set vector table location (important for interrupts to work correctly)
+//    SCB->VTOR = ETX_APP_FLASH_ADDR;
+//
+//    // Jump to application reset handler
+//    void (*app_entry)(void) = (void (*)(void))app_reset_handler;
+//    app_entry();
+//
+//    // Should never return here
+//    while(1);
+//}
 /* USER CODE END 4 */
 
 /**

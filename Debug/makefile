@@ -52,6 +52,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 OPTIGA.list \
 
+OBJCOPY_BIN += \
+OPTIGA.bin \
+
 
 # All Target
 all: main-build
@@ -75,12 +78,17 @@ OPTIGA.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+OPTIGA.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "OPTIGA.bin"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
-	-$(RM) OPTIGA.elf OPTIGA.list OPTIGA.map default.size.stdout
+	-$(RM) OPTIGA.bin OPTIGA.elf OPTIGA.list OPTIGA.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'
