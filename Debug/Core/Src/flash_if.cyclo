@@ -1,6 +1,7 @@
 ../Core/Src/flash_if.c:5:10:get_sector	9
-../Core/Src/flash_if.c:22:6:FLASH_IF_init	2
-../Core/Src/flash_if.c:41:10:FLASH_IF_erase	3
-../Core/Src/flash_if.c:84:10:FLASH_IF_write	5
-../Core/Src/flash_if.c:124:10:FLASH_IF_get_write_protection_status	3
-../Core/Src/flash_if.c:144:10:FLASH_IF_write_protection_config	4
+../Core/Src/flash_if.c:22:6:FLASH_IF_init	1
+../Core/Src/flash_if.c:37:10:FLASH_IF_erase	4
+../Core/Src/flash_if.c:73:6:FLASH_IF_disable_all_protection	3
+../Core/Src/flash_if.c:111:10:FLASH_IF_write	5
+../Core/Src/flash_if.c:143:10:FLASH_IF_get_write_protection_status	3
+../Core/Src/flash_if.c:164:10:FLASH_IF_write_protection_config	6

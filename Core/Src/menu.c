@@ -18,7 +18,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 pFunction jumpToApplication;
-uint32_t jumpAddress, flashProtection = 0;
+uint32_t jumpAddress, flashProtection;
 uint8_t aFileName[FILE_NAME_LENGTH];
 
 /* Private function prototypes -----------------------------------------------*/
@@ -35,6 +35,7 @@ void serial_download(void) {
 	uint32_t size = 0;
 	COM_StatusTypeDef result = COM_OK;
 	serial_put_string((uint8_t *)"Waiting for the file to be sent ... (press 'a' to abort)\n\r");
+
 	if (FLASH_IF_erase(APPLICATION_ADDRESS) != FLASHIF_OK) {
 		serial_put_string((uint8_t*)"Error occured while erasing the flash");
 	}
@@ -51,7 +52,7 @@ void serial_download(void) {
 		    serial_put_string((uint8_t *)"-------------------\n");
 	}
 	else if (result == COM_ABORT) {
-		serial_put_string((uint8_t*)"\r\n\nAborted by user.\n\r");
+		serial_put_string((uint8_t*)"\r\n\nAborted by er.\n\r");
 	}
 	else if (result == COM_LIMIT) {
 		serial_put_string((uint8_t*)"\n\n\rThe image size is higher than the allowed space memory!\n\r");
@@ -107,13 +108,7 @@ void main_menu(void) {
 	 serial_put_string((uint8_t *)"\r\n=                                   By STM Application Team          =");
 	 serial_put_string((uint8_t *)"\r\n======================================================================");
 	 serial_put_string((uint8_t *)"\r\n\r\n");
-
-	  /* Test if any sector of Flash memory where user application will be loaded is write protected */
-	//  FLASH_OBProgramInitTypeDef config;
-//	  config.WRPState= OB_WRPSTATE_ENABLE;
-//	  config.WRPSector = (OB_WRP_SECTOR_5 | OB_WRP_SECTOR_6 | OB_WRP_SECTOR_7);
-
-	  flashProtection = FLASH_IF_get_write_protection_status();
+	  FLASH_IF_disable_all_protection();
 
 	  while (1)
 	  {
@@ -123,7 +118,9 @@ void main_menu(void) {
 		  serial_put_string((uint8_t *)"  Upload image from the internal Flash ----------------- 2\r\n\n");
 		  serial_put_string((uint8_t *)"  Execute the loaded application ----------------------- 3\r\n\n");
 
-	    if(flashProtection != FLASHIF_PROTECTION_NONE)
+		  flashProtection = FLASH_IF_get_write_protection_status();
+
+	    if(flashProtection == FLASHIF_PROTECTION_WRPENABLED)
 	    {
 	    	serial_put_string((uint8_t *)"  Disable the write protection ------------------------- 4\r\n\n");
 	    }
@@ -135,7 +132,7 @@ void main_menu(void) {
 
 	    /* Clean the input path */
 	    __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
-	    __HAL_UART_CLEAR_OREFLAG(&UartHandle);
+	//    __HAL_UART_CLEAR_OREFLAG(&UartHandle);
 
 	    /* Receive key */
 	    HAL_UART_Receive(&UartHandle, &key, 1, RX_TIMEOUT);
@@ -163,6 +160,7 @@ void main_menu(void) {
 	      jumpToApplication();
 	      break;
 	    case '4' :
+
 	      if (flashProtection != FLASHIF_PROTECTION_NONE)
 	      {
 	        /* Disable the write protection */
@@ -170,11 +168,6 @@ void main_menu(void) {
 	        {
 	        	serial_put_string((uint8_t *)"Write Protection disabled...\r\n");
 	        	serial_put_string((uint8_t *)"System will now restart...\r\n");
-	          /* Launch the option byte loading */
-	          HAL_FLASH_OB_Launch();
-	          HAL_Delay(3000);  // Wait 3 seconds for user to observe
-	          NVIC_SystemReset();
-//	          HAL_FLASH_Lock();
 	        }
 	        else
 	        {
@@ -187,13 +180,6 @@ void main_menu(void) {
 	        {
 	        	serial_put_string((uint8_t *)"Write Protection enabled...\r\n");
 	        	serial_put_string((uint8_t *)"System will now restart...\r\n");
-
-	          flashProtection = FLASH_IF_get_write_protection_status();
-	          /* Launch the option byte loading */
-	          HAL_FLASH_OB_Launch();
-	          HAL_Delay(3000);  // Wait 3 seconds for user to observe
-	          NVIC_SystemReset();
-//	          HAL_FLASH_Lock();
 	        }
 	        else
 	        {

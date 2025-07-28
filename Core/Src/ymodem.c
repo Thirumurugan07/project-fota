@@ -22,11 +22,11 @@
 uint8_t aPacketData[PACKET_1K_SIZE + PACKET_DATA_INDEX + PACKET_TRAILER_SIZE];
 
 /* Private function prototypes -----------------------------------------------*/
-static void prepare_inital_packet(uint8_t* p_data, const uint8_t *p_file_name, uint32_t length);
+static void prepare_initial_packet(uint8_t* p_data, const uint8_t *p_file_name, uint32_t length);
 static void prepare_packet(uint8_t *p_source, uint8_t *p_packet, uint8_t pkt_nr, uint32_t size_blk);
 static HAL_StatusTypeDef receive_packet(uint8_t *p_data, uint32_t *p_length, uint32_t timeout);
 uint16_t UpdateCRC16(uint16_t crc_in, uint8_t byte);
-uint16_t Cal_CRC16(const uint8_t* p_data, uint32_t size);
+uint16_t calc_crc16(const uint8_t* p_data, uint32_t size);
 uint8_t CalcChecksum(const uint8_t *p_data, uint32_t size);
 
 /**
@@ -42,67 +42,74 @@ uint8_t CalcChecksum(const uint8_t *p_data, uint32_t size);
   */
 
 static HAL_StatusTypeDef receive_packet(uint8_t *p_data, uint32_t *p_length, uint32_t timeout) {
-	uint32_t crc;
-	uint32_t packetSize = 0;
-	HAL_StatusTypeDef status;
-	uint8_t char1;
-	*p_length = 0;
+    uint16_t crc;
+    uint32_t packetSize = 0;
+    HAL_StatusTypeDef status;
+    uint8_t char1;
 
-	status = HAL_UART_Receive(&UartHandle, &char1, 1, timeout);
-	if (status == HAL_OK) {
-		switch(char1) {
-		case SOH:
-			packetSize = PACKET_SIZE;
-			break;
-		case STX:
-			packetSize = PACKET_1K_SIZE;
-			break;
-		case EOT:
-			break;
-		case CA:
-		    if ((HAL_UART_Receive(&UartHandle, &char1, 1, timeout) == HAL_OK) && (char1 == CA))
-			{
-			  packetSize = 2;
-			}
-			else
-			{
-			  status = HAL_ERROR;
-			}
-			break;
-		case ABORT1:
-		case ABORT2:
-			status = HAL_BUSY;
-			break;
-		default:
-			status = HAL_ERROR;
-			break;
-		}
-		*p_data = char1;
-		if (packetSize >= PACKET_SIZE) {
-			status = HAL_UART_Receive(&UartHandle, &p_data[PACKET_NUMBER_INDEX], (packetSize + PACKET_OVERHEAD_SIZE), timeout);
-			if (status == HAL_OK) {
-				if (p_data[PACKET_NUMBER_INDEX] != ((p_data[PACKET_CNUMBER_INDEX]) ^ NEGATIVE_BYTE)) {
+    *p_length = 0;
+    status = HAL_UART_Receive(&UartHandle, &char1, 1, timeout);
 
-					packetSize = 0;
-					status = HAL_ERROR;
-				}
-				else {
-					crc = p_data[packetSize + PACKET_DATA_INDEX] << 8;
-					crc += p_data[packetSize + PACKET_DATA_INDEX + 1];
-					if (HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&p_data[PACKET_DATA_INDEX], packetSize) != crc )
-					{
-					            packetSize = 0;
-					            status = HAL_ERROR;
-					}
-				}
-			}
-			else {
-				packetSize = 0;
-			}
-		}
-	}
-	*p_length = packetSize;
-	return status;
+    if (status != HAL_OK) {
+        return status;
+    }
+
+    switch(char1) {
+        case SOH:
+            packetSize = PACKET_SIZE;
+            break;
+        case STX:
+            packetSize = PACKET_1K_SIZE;
+            break;
+        case EOT:
+        	break;
+
+        case CA:
+            if ((HAL_UART_Receive(&UartHandle, &char1, 1, timeout) != HAL_OK) || (char1 != CA)) {
+                return HAL_ERROR;
+            }
+            packetSize = 2;
+            break;
+        case ABORT1:
+        case ABORT2:
+            return HAL_BUSY;
+        default:
+            return HAL_ERROR;
+    }
+
+    *p_data = char1;
+
+    if (packetSize >= PACKET_SIZE) {
+        status = HAL_UART_Receive(&UartHandle,
+                                &p_data[PACKET_NUMBER_INDEX],
+                                (packetSize + PACKET_OVERHEAD_SIZE),
+                                timeout);
+
+        if (status != HAL_OK) {
+            *p_length = 0;
+            return status;
+        }
+
+        /* Validate packet sequence numbers */
+        if (p_data[PACKET_NUMBER_INDEX] != ((p_data[PACKET_CNUMBER_INDEX]) ^ NEGATIVE_BYTE)) {
+            *p_length = 0;
+            return HAL_ERROR;
+        }
+
+        /* Check CRC */
+        crc = (p_data[packetSize + PACKET_DATA_INDEX] << 8) |
+               p_data[packetSize + PACKET_DATA_INDEX + 1];
+
+        if (calc_crc16(&p_data[PACKET_DATA_INDEX], packetSize) != crc )
+                  {
+                    packetSize = 0;
+                    status = HAL_ERROR;
+                  }
+    }
+    else packetSize = 0;
+
+    *p_length = packetSize;
+    return HAL_OK;
 }
 
 /**
@@ -113,32 +120,32 @@ static HAL_StatusTypeDef receive_packet(uint8_t *p_data, uint32_t *p_length, uin
   * @retval None
   */
 
-void prepare_inital_packet(uint8_t* p_data, const uint8_t* p_file_name, uint32_t length) {
-	uint32_t i = 0, j = 0;
-	uint8_t astring[10];
+static void prepare_initial_packet(uint8_t* p_data, const uint8_t* p_file_name, uint32_t length) {
+    uint32_t i = 0, j = 0;
+    uint8_t aString[10];  // camelCase for non-pointers
 
-	/* First three bytes are constant---------------------------*/
-	p_data[PACKET_START_INDEX] = SOH;
-	p_data[PACKET_NUMBER_INDEX] = 0x00;
-	p_data[PACKET_CNUMBER_INDEX] = 0xff;
+    /* First three bytes are constant */
+    p_data[PACKET_START_INDEX] = SOH;
+    p_data[PACKET_NUMBER_INDEX] = 0x00;
+    p_data[PACKET_CNUMBER_INDEX] = 0xff;
 
-	  /* Filename written */
-	for (i = 0; (p_file_name[i] != '\0') && (i < FILE_NAME_LENGTH);i++) {
-		p_data[i + PACKET_DATA_INDEX] = p_file_name[i];
-	}
-	p_data[i + PACKET_DATA_INDEX] = 0x00;
+    /* Filename written */
+    for (i = 0; (p_file_name[i] != '\0') && (i < FILE_NAME_LENGTH); i++) {
+        p_data[i + PACKET_DATA_INDEX] = p_file_name[i];
+    }
+    p_data[i + PACKET_DATA_INDEX] = 0x00;
 
-	  /* file size written */
-	int_to_str(astring,length);
-	i += 1 + PACKET_DATA_INDEX;
-	while (astring[j] != 0) {
-		p_data[i++] = astring[j++];
-	}
-	/* padding with zeros */
-	  for (j = i; j < PACKET_SIZE + PACKET_DATA_INDEX; j++)
-	  {
-	    p_data[j] = 0;
-	  }
+    /* File size written */
+    int_to_str(aString, length);  // Assuming `int_to_str` is your function
+    i += 1 + PACKET_DATA_INDEX;
+    while (aString[j] != '\0') {
+        p_data[i++] = aString[j++];
+    }
+
+    /* Padding with zeros */
+    for (j = i; j < PACKET_SIZE + PACKET_DATA_INDEX; j++) {
+        p_data[j] = 0;
+    }
 }
 
 /**
@@ -150,37 +157,31 @@ void prepare_inital_packet(uint8_t* p_data, const uint8_t* p_file_name, uint32_t
   * @retval None
   */
 
-static void prepare_packet(uint8_t *p_source, uint8_t *p_packet, uint8_t pkt_nr, uint32_t size_blk) {
-	uint8_t *p_record;
-	uint32_t i, size, packetSize;
+void prepare_packet(uint8_t* p_source, uint8_t* p_packet, uint8_t pktNr, uint32_t sizeBlk) {
+    uint8_t* p_record;  // Pointer: p_ prefix + snake_case
+    uint32_t i, size, packetSize;  // camelCase for non-pointers
 
-	  /* Make first three packet */
-	packetSize = size_blk >= PACKET_1K_SIZE ? PACKET_1K_SIZE: PACKET_SIZE;
-	size = size_blk < packetSize ? size_blk: packetSize;
-	 if (packetSize == PACKET_1K_SIZE)
-	  {
-	    p_packet[PACKET_START_INDEX] = STX;
-	  }
-	  else
-	  {
-	    p_packet[PACKET_START_INDEX] = SOH;
-	  }
+    /* Determine packet size (1K or normal) */
+    packetSize = (sizeBlk >= PACKET_1K_SIZE) ? PACKET_1K_SIZE : PACKET_SIZE;
+    size = (sizeBlk < packetSize) ? sizeBlk : packetSize;
 
-	 p_packet[PACKET_NUMBER_INDEX] = pkt_nr;
-	  p_packet[PACKET_CNUMBER_INDEX] = (~pkt_nr);
-	  p_record = p_source;
+    /* Set packet header */
+    p_packet[PACKET_START_INDEX] = (packetSize == PACKET_1K_SIZE) ? STX : SOH;
+    p_packet[PACKET_NUMBER_INDEX] = pktNr;
+    p_packet[PACKET_CNUMBER_INDEX] = ~pktNr;
 
-	  /* Filename packet has valid data */
-	  for (i = 0; (i < size + PACKET_DATA_INDEX);i++) {
-		  p_packet[i] = *p_record;
-	  }
-	  if ( size  <= packetSize)
-	   {
-	     for (i = size + PACKET_DATA_INDEX; i < packetSize + PACKET_DATA_INDEX; i++)
-	     {
-	       p_packet[i] = 0x1A; /* EOF (0x1A) or 0x00 */
-	     }
-	   }
+    /* Copy data into packet */
+    p_record = p_source;
+    for (i = PACKET_DATA_INDEX; i < size + PACKET_DATA_INDEX; i++) {
+        p_packet[i] = *p_record++;
+    }
+
+    /* Pad remaining space with EOF (0x1A) */
+    if (size <= packetSize) {
+        for (i = size + PACKET_DATA_INDEX; i < packetSize + PACKET_DATA_INDEX; i++) {
+            p_packet[i] = 0x1A;  // EOF marker
+        }
+    }
 }
 
 /**
@@ -189,24 +190,20 @@ static void prepare_packet(uint8_t *p_source, uint8_t *p_packet, uint8_t pkt_nr,
   * @param  input byte
   * @retval None
   */
-uint16_t UpdateCRC16(uint16_t crc_in, uint8_t byte)
-{
-  uint32_t crc = crc_in;
-  uint32_t in = byte | 0x100;
+uint16_t update_crc16(uint16_t crcIn, uint8_t byte) {
+    uint32_t crc = crcIn;
+    uint32_t in = byte | 0x100;
 
-  do
-  {
-    crc <<= 1;
-    in <<= 1;
-    if(in & 0x100)
-      ++crc;
-    if(crc & 0x10000)
-      crc ^= 0x1021;
-  }
+    do {
+        crc <<= 1;
+        in <<= 1;
+        if (in & 0x100)
+            ++crc;
+        if (crc & 0x10000)
+            crc ^= 0x1021;
+    } while (!(in & 0x10000));
 
-  while(!(in & 0x10000));
-
-  return crc & 0xffffu;
+    return crc & 0xFFFFu;
 }
 
 /**
@@ -215,37 +212,34 @@ uint16_t UpdateCRC16(uint16_t crc_in, uint8_t byte)
   * @param  length
   * @retval None
   */
-uint16_t Cal_CRC16(const uint8_t* p_data, uint32_t size)
-{
-  uint32_t crc = 0;
-  const uint8_t* dataEnd = p_data+size;
+uint16_t calc_crc16(const uint8_t* p_data, uint32_t size) {
+	uint32_t crc = 0;
+	const uint8_t* p_data_end = p_data + size;
 
-  while(p_data < dataEnd)
-    crc = UpdateCRC16(crc, *p_data++);
+	while (p_data < p_data_end)
+		crc = update_crc16(crc, *p_data++);
 
-  crc = UpdateCRC16(crc, 0);
-  crc = UpdateCRC16(crc, 0);
+	crc = update_crc16(crc, 0);
+	crc = update_crc16(crc, 0);
 
-  return crc&0xffffu;
+	return crc & 0xFFFFu;
 }
 
 /**
-  * @brief  Calculate Check sum for YModem Packet
-  * @param  p_data Pointer to input data
-  * @param  size length of input data
-  * @retval uint8_t checksum value
-  */
-uint8_t calc_checksum(const uint8_t *p_data, uint32_t size)
-{
-  uint32_t sum = 0;
-  const uint8_t *p_data_end = p_data + size;
+* @brief  Calculate Check sum for YModem Packet
+* @param  p_data Pointer to input data
+* @param  size length of input data
+* @retval uint8_t checksum value
+*/
+uint8_t calc_checksum(const uint8_t* p_data, uint32_t size) {
+	uint32_t sum = 0;
+	const uint8_t* p_data_end = p_data + size;
 
-  while (p_data < p_data_end )
-  {
-    sum += *p_data++;
-  }
+	while (p_data < p_data_end) {
+		sum += *p_data++;
+	}
 
-  return (sum & 0xffu);
+	return (sum & 0xFFu);
 }
 
 /* Public functions ---------------------------------------------------------*/
@@ -254,128 +248,185 @@ uint8_t calc_checksum(const uint8_t *p_data, uint32_t size)
   * @param  p_size The size of the file.
   * @retval COM_StatusTypeDef result of reception/programming
   */
-COM_StatusTypeDef ymodem_receive ( uint32_t *p_size ) {
+COM_StatusTypeDef ymodem_receive(uint32_t* p_size) {
+	 	 	 HAL_FLASH_Unlock();
+			 HAL_FLASH_OB_Unlock();
+			  FLASH_OBProgramInitTypeDef config;
+			  HAL_FLASHEx_OBGetConfig(&config);
+			 config.OptionType = OPTIONBYTE_WRP;
+			 config.WRPState= OB_WRPSTATE_DISABLE;
+			 config.RDPLevel = OB_RDP_LEVEL0;
+			  config.WRPSector = (OB_WRP_SECTOR_5 | OB_WRP_SECTOR_6 | OB_WRP_SECTOR_7);
+			  if (HAL_FLASHEx_OBProgram(&config) == HAL_OK)
+			  {
+			      HAL_FLASH_OB_Launch(); // This will cause a reset!
+			  }
 
-		uint32_t flashDestination, ramSource, fileSize;
-		uint32_t i, packetLength, sessionDone = 0, fileDone, sessionBegin= 0, errors = 0;
-		uint8_t* filePtr;
-		uint8_t p_fileSize[FILE_SIZE_LENGTH], tmp, packetsReceived;
-		COM_StatusTypeDef result = COM_OK;
-	 /* Initialize flashdestination variable */
-		flashDestination = APPLICATION_ADDRESS;
-		while ((sessionDone == 0) && (result == COM_OK)) {
-			packetsReceived = 0;
-			fileDone = 0;
-			while ((fileDone == 0) && (result == COM_OK)) {
-				switch (receive_packet(aPacketData, &packetLength, DOWNLOAD_TIMEOUT)) {
-				case HAL_OK:
-					errors = 0;
-					switch(packetLength) {
-					case 2:
-						/* Abort by the user--------------*/
-						serial_put_byte(ACK);
-						result = COM_ABORT;
-						break;
+			  HAL_FLASH_OB_Lock();
+			  HAL_FLASH_Lock();
 
-					case 0:
-						/* End of transmission-----------*/
-						serial_put_byte(ACK);
-						fileDone = 1;
-						break;
-					default:
-						/* Normal Data range-------------------*/
-						if (aPacketData[PACKET_NUMBER_INDEX] != packetsReceived) {
-							serial_put_byte(NAK);
-						}
-						else {
-							if (packetsReceived == 0) {
-								/* File Name Packet--------------*/
-								if (aPacketData[PACKET_DATA_INDEX] != 0) {
-									filePtr = aPacketData + PACKET_DATA_INDEX;
-									i = 0;
-									while ((*filePtr != 0) && (i < FILE_NAME_LENGTH)) {
-										aFileName[i++] = *filePtr++;
-									}
-				                    /* File size extraction */
-									aFileName[i++] = '\0';
-									i = 0;
-									filePtr++;
+    uint32_t flashDestination, ramSource, fileSize;
+    uint32_t i, packetLength, sessionDone = 0, fileDone, sessionBegin = 0, errors = 0;
+    uint8_t* p_filePtr;
+    uint8_t p_fileSize[FILE_SIZE_LENGTH], tmp, packetsReceived;
+    COM_StatusTypeDef result = COM_OK;
 
-									while ((*filePtr != ' ') && (i < FILE_SIZE_LENGTH)) {
-										p_fileSize[i++] = *filePtr++;
-									}
-									p_fileSize[i++] = '\0';
-									str_to_int(p_fileSize, &fileSize);
+    flashDestination = APPLICATION_ADDRESS;
 
-									 /* Test the size of the image to be sent */
-									 /* Image size is greater than Flash size */
-									if (*p_size > (USER_FLASH_SIZE + 1)) {
-									 /* End session */
-									  tmp = CA;
-									  HAL_UART_Transmit(&UartHandle, &tmp, 1, NAK_TIMEOUT);
-									  HAL_UART_Transmit(&UartHandle, &tmp, 1, NAK_TIMEOUT);
-									  result = COM_LIMIT;
-									}
-									/* erase user application area */
-									FLASH_IF_erase(APPLICATION_ADDRESS);
-									*p_size = fileSize;
-									serial_put_byte(ACK);
-									serial_put_byte(CRC16);
-								}
+    while ((sessionDone == 0) && (result == COM_OK)) {
+        packetsReceived = 0;
+        fileDone = 0;
+        while ((fileDone == 0) && (result == COM_OK)) {
+            switch (receive_packet(aPacketData, &packetLength, DOWNLOAD_TIMEOUT)) {
+                case HAL_OK:
+                    errors = 0;
+                    switch (packetLength) {
+                        case 2:
+                            serial_put_byte(ACK);
+                            result = COM_ABORT;
+                            break;
 
-				                /* File header packet is empty, end session */
-								else {
-									serial_put_byte(ACK);
-									fileDone = 1;
-									sessionDone = 1;
-									break;
-								}
-							}
-							else /* Data packet received */
-							{
-								ramSource = (uint32_t) & aPacketData[PACKET_DATA_INDEX];
-								 /* Write received data in Flash */
-								if (FLASH_IF_write(flashDestination, (uint32_t*)ramSource,packetLength/4)  == FLASHIF_OK) {
-									flashDestination += packetLength;
-								}
-								else /* An error occurred while writing to Flash memory */
-								{
-									/* End session */
-									serial_put_byte(CA);
-									serial_put_byte(CA);
-									result = COM_DATA;
-								}
-							}
-							packetsReceived ++;
-							sessionBegin = 1;
-						}
-						break;
-				}
-					break;
-				case HAL_BUSY: /* Abort actually */
-					serial_put_byte(CA);
-					serial_put_byte(CA);
-					result = COM_ABORT;
-					break;
-				default:
-					if (sessionBegin) {
-						errors++;
-					}
-					if (errors > MAX_ERRORS) {
-						  /* Abort communication */
-						serial_put_byte(CA);
-						serial_put_byte(CA);
-						result = COM_ABORT;
-					}
-					else {
-						serial_put_byte(CRC16); /* Ask for a packet */
-						serial_put_byte(ACK); //BFM
-					}
-					break;
-				}
-		}
-	}
-	return result;
+                        case 0:
+                            serial_put_byte(ACK);
+                            fileDone = 1;
+                            break;
+
+                        default:
+                            if (aPacketData[PACKET_NUMBER_INDEX] != (packetsReceived & 0xffU)) {
+                                serial_put_byte(NAK);
+                            }
+                            else {
+                                if (packetsReceived == 0) {
+                                    if (aPacketData[PACKET_DATA_INDEX] != 0) {
+                                        p_filePtr = aPacketData + PACKET_DATA_INDEX;
+                                        i = 0;
+                                        while ((*p_filePtr != 0) && (i < FILE_NAME_LENGTH)) {
+                                            aFileName[i++] = *p_filePtr++;
+                                        }
+                                        aFileName[i++] = '\0';
+
+                                        i = 0;
+                                        p_filePtr++;
+                                        while ((*p_filePtr != ' ') && (i < FILE_SIZE_LENGTH)) {
+                                            p_fileSize[i++] = *p_filePtr++;
+                                        }
+                                        p_fileSize[i++] = '\0';
+                                        str_to_int(p_fileSize, &fileSize);
+
+                                        if (fileSize > (USER_FLASH_SIZE + 1)) {
+
+                                            tmp = CA;
+                                            HAL_UART_Transmit(&UartHandle, &tmp, 1, NAK_TIMEOUT);
+                                            HAL_UART_Transmit(&UartHandle, &tmp, 1, NAK_TIMEOUT);
+                                            result = COM_LIMIT;
+                                            break;
+                                        }
+                                        FLASH_IF_disable_all_protection();
+                                        if (FLASH_IF_erase(APPLICATION_ADDRESS) != FLASHIF_OK) {
+                                           // serial_put_string((uint8_t*)"[ERROR] Flash erase failed\r\n");
+                                            return COM_ERROR;
+                                        }
+
+                                        *p_size = fileSize;
+                                        serial_put_byte(ACK);
+                                        serial_put_byte(CRC16);
+                                    }
+                                    else {
+                                        serial_put_byte(ACK);
+                                        fileDone = 1;
+                                        sessionDone = 1;
+                                        break;
+                                    }
+                                }
+                                else {
+                                	ramSource = (uint32_t)&aPacketData[PACKET_DATA_INDEX];
+
+                                	// Check if the source pointer is non-null and in RAM
+                                	if (ramSource == 0 || ramSource < 0x20000000 || ramSource > 0x2004FFFF) {
+                                	    // Invalid pointer or not in SRAM range for STM32F4 (adjust if needed)
+                                	    serial_put_byte(CA);
+                                	    serial_put_byte(CA);
+                                	    result = FLASHIF_WRITING_ERROR;
+
+                                	} else {
+                                	    uint32_t stt = FLASH_IF_write(flashDestination, (uint32_t*)ramSource, packetLength / 4);
+
+                                	    if (stt == FLASHIF_WRITING_ERROR) {
+                                	        serial_put_byte(CA);
+                                	        serial_put_byte(CA);
+                                	        result = FLASHIF_WRITING_ERROR;
+
+                                	    }
+                                	    else if (stt == FLASHIF_WRITINGCTRL_ERROR) {
+                                	        serial_put_byte(CA);
+                                	        serial_put_byte(CA);
+                                	        result = FLASHIF_WRITINGCTRL_ERROR;
+                                	    }
+                                	    else {
+                                	        flashDestination += packetLength;
+                                	        serial_put_byte(ACK);
+                                	    }
+                                	}
+                                }
+                                packetsReceived++;
+                                sessionBegin = 1;
+                            }
+                            break;
+                    }
+                    break;
+
+                case HAL_BUSY:
+
+                    serial_put_byte(CA);
+                    serial_put_byte(CA);
+                    result = COM_ABORT;
+                    break;
+
+                default:
+                    if (sessionBegin) {
+                        errors++;
+                    }
+                    if (errors > MAX_ERRORS) {
+
+                        serial_put_byte(CA);
+                        serial_put_byte(CA);
+                        result = COM_ABORT;
+                    }
+                    else {
+                        serial_put_byte(CRC16);
+                    }
+                    break;
+            }
+        }
+    }
+
+    /* Final status report */
+    if (result == COM_OK) {
+        serial_put_string((uint8_t*)"\r\nYMODEM Success: ");
+        serial_put_string(aFileName);
+
+        serial_put_string((uint8_t*)p_fileSize);
+    }
+    else {
+        serial_put_string((uint8_t*)"\r\nYMODEM Failed: ");
+        switch(result) {
+            case COM_LIMIT:
+                serial_put_string((uint8_t*)"File too large");
+                break;
+            case COM_DATA:
+                serial_put_string((uint8_t*)"Flash write error");
+                break;
+
+            case COM_ABORT:
+                serial_put_string((uint8_t*)"Transfer aborted");
+                break;
+            default:
+                serial_put_string((uint8_t*)"Unknown error");\
+                break;
+        }
+    }
+
+    return result;
 }
 /**
   * @brief  Transmit a file using the ymodem protocol
@@ -384,253 +435,169 @@ COM_StatusTypeDef ymodem_receive ( uint32_t *p_size ) {
   * @param  file_size: Size of the transmission
   * @retval COM_StatusTypeDef result of the communication
   */
-COM_StatusTypeDef ymodem_transmit(uint8_t* p_buff,const uint8_t* p_file_name, uint32_t file_size)
-{
-	  uint32_t errors = 0, ackRecpt = 0, size = 0, pktSize;
-	  uint8_t *p_buf_int;
-	  COM_StatusTypeDef result = COM_OK;
-	  uint32_t blkNumber = 1;
-	  uint8_t aRxCtrl[2];
-	  uint8_t i;
-	  #ifdef CRC16_F
-	  uint32_t tempCrc;
-	  #else /* CRC16_F */
-	  uint8_t tempChkSum;
-	  #endif /* CRC16_F */
+COM_StatusTypeDef ymodem_transmit(uint8_t* p_buf, const uint8_t* p_file_name, uint32_t file_size) {
+    uint32_t errors = 0, ackRecpt = 0, size = 0, pktSize;
+    uint8_t *p_buf_int;
+    COM_StatusTypeDef result = COM_OK;
+    uint32_t blkNumber = 1;
+    uint8_t aRxCtrl[2];
+    uint8_t i;
+#ifdef CRC16_F
+    uint32_t tempCrc;
+#else
+    uint8_t tempChkSum;
+#endif
 
-	  /* Prepare first block - header */
-	  prepare_inital_packet(aPacketData, p_file_name, file_size);
+    /* Prepare first block - header */
+    prepare_initial_packet(aPacketData, p_file_name, file_size);
 
-	  while ((ackRecpt != 0) && (result == COM_OK)) {
-		  /* Send Packet */
-		  HAL_UART_Transmit(&UartHandle, &aPacketData[PACKET_START_INDEX], PACKET_SIZE + PACKET_HEADER_SIZE, NAK_TIMEOUT);
-		  /* Send CRC or Check Sum based on CRC16_F */
-		 #ifdef CRC16_F
-		     tempCrc = HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&aPacketData[PACKET_DATA_INDEX], PACKET_SIZE);
-		     serial_put_byte(tempCrc >> 8);
-		     serial_put_byte((tempCrc & 0xFF));
-		 #else /* CRC16_F */
-		     tempChksum = CalcChecksum(&aPacketData[PACKET_DATA_INDEX], PACKET_SIZE);
-		     serial_put_byte(tempChksum);
-		#endif /* CRC16_F */
+    while ((!ackRecpt) && (result == COM_OK)) {
+        /* Send Packet */
+        HAL_UART_Transmit(&UartHandle, &aPacketData[PACKET_START_INDEX], PACKET_SIZE + PACKET_HEADER_SIZE, NAK_TIMEOUT);
 
-		     /* Wait for Ack and 'C' */
-		        if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK)
-		        {
-		          if (aRxCtrl[0] == ACK)
-		          {
-		            ackRecpt = 1;
- 		            HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT); //BFM added to wait for the 'C'
-		          }
-		          else if (aRxCtrl[0] == CA)
-		          {
-		            if ((HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) && (aRxCtrl[0] == CA))
-		            {
-		              HAL_Delay(2);
-		              __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
-		              __HAL_UART_CLEAR_OREFLAG(&UartHandle);
-		              result = COM_ABORT;
-		            }
-		          }
-		        }
-		        else
-		        {
-		          errors++;
-		        }
-		        if (errors >= MAX_ERRORS)
-		         {
-		             result = COM_ERROR;
-		         }
-	  }
-		        p_buf_int = p_buff;
-		        size = file_size;
+        /* Send CRC or Checksum */
+#ifdef CRC16_F
+        tempCrc = HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&aPacketData[PACKET_DATA_INDEX], PACKET_SIZE);
+        serial_put_byte(tempCrc >> 8);
+        serial_put_byte(tempCrc & 0xFF);
+#else
+        tempChkSum = calc_checksum(&aPacketData[PACKET_DATA_INDEX], PACKET_SIZE);
+        Serial_PutByte(tempChkSum);
+#endif
 
-		        /* Here 1024 bytes length is used to send the packets */
-		        while ((size) && (result == COM_OK)) {
-		        	prepare_packet(p_buf_int, aPacketData, blkNumber, size);
-		        	ackRecpt = 0;
-		        	aRxCtrl[0] = 0;
-		        	errors = 0;
+        /* Wait for response */
+        if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) {
+            if (aRxCtrl[0] == ACK) {
+                ackRecpt = 1;
+                HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT); // Wait for 'C'
+            }
+            else if (aRxCtrl[0] == CA) {
+                if ((HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) && (aRxCtrl[0] == CA)) {
+                    HAL_Delay(2);
+                    __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
+                    result = COM_ABORT;
+                }
+            }
+        }
+        else {
+            errors++;
+        }
 
-		        	    /* Resend packet if NAK for few times else end of communication */
+        if (errors >= MAX_ERRORS) {
+            result = COM_ERROR;
+        }
+    }
 
-		        	while ((!ackRecpt) && (result == COM_OK)) {
-		        		/* Send next packet */
-		        		      if (size >= PACKET_1K_SIZE)
-		        		      {
-		        		        pktSize = PACKET_1K_SIZE;
-		        		      }
-		        		      else
-		        		      {
-		        		        pktSize = PACKET_SIZE;
-		        		      }
-		        		      HAL_UART_Transmit(&UartHandle,&aPacketData[PACKET_START_INDEX], pktSize + PACKET_HEADER_SIZE, NAK_TIMEOUT);
-		        		      /* Send CRC or Check Sum based on CRC16_F */
-		        		#ifdef CRC16_F
-		        		      tempCrc = HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&aPacketData[PACKET_DATA_INDEX], pktSize);
-		        		      serial_put_byte(tempCrc >> 8);
-		        		      serial_put_byte(tempCrc & 0xFF);
-		        		#else /* CRC16_F */
-		        		      tempChksum = CalcChecksum(&aPacketData[PACKET_DATA_INDEX], pktSize);
-		        		      serial_put_byte(tempChksum);
-		        		#endif /* CRC16_F */
-		        		      /* Wait for Ack */
-		        		      if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK && (aRxCtrl[0] == ACK))
-		        		      {
-									ackRecpt = 1;
-									if (size >= pktSize) {
-										p_buf_int += pktSize;
-										size -= pktSize;
-										if (blkNumber == (USER_FLASH_SIZE / PACKET_1K_SIZE))
-										  {
-											result = COM_LIMIT; /* boundary error */
-										  }
-										  else
-										  {
-											blkNumber++;
-										  }
-									}
-									else
-									{
-										size = 0;
-										p_buf_int += pktSize;
-									}
-		        		      }
-		        		      else {
-		        		    	  errors++;
-		        		      }
-		        		      /* Resend packet if NAK  for a count of 10 else end of communication */
-		        		      if (errors >= MAX_ERRORS)
-		        		      {
-		        		        result = COM_ERROR;
-		        		      }
-		        	}
+    p_buf_int = p_buf;
+    size = file_size;
 
-		        }
-		        /* Sending End Of Transmission char */
-			  ackRecpt = 0;
-			  aRxCtrl[0] = 0x00;
-			  errors = 0;
-			  while (( !ackRecpt ) && ( result == COM_OK ))
-			    {
-			      serial_put_byte(EOT);
+    /* Send data packets */
+    while ((size) && (result == COM_OK)) {
+        prepare_packet(p_buf_int, aPacketData, blkNumber, size);
+        ackRecpt = 0;
+        errors = 0;
 
-			      /* Wait for Ack */
-			      if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK)
-					{
-					  if (aRxCtrl[0] == ACK)
-					  {
-						ackRecpt = 1;
-						HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT); //BFM added to wait for the 'C'
-					  }
-					  else if (aRxCtrl[0] == CA)
-					  {
-						if ((HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) && (aRxCtrl[0] == CA))
-						{
-						  HAL_Delay(2);
-						  __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
-						  __HAL_UART_CLEAR_OREFLAG(&UartHandle);
-						  result = COM_ABORT;
-						}
-					  }
-					}
-			      else
-			      {
-			        errors++;
-			      }
+        while ((!ackRecpt) && (result == COM_OK)) {
+            /* Determine packet size */
+            pktSize = (size >= PACKET_1K_SIZE) ? PACKET_1K_SIZE : PACKET_SIZE;
 
-			      if (errors >=  MAX_ERRORS)
-			      {
-			        result = COM_ERROR;
-			      }
-			    }
+            /* Send packet */
+            HAL_UART_Transmit(&UartHandle, &aPacketData[PACKET_START_INDEX], pktSize + PACKET_HEADER_SIZE, NAK_TIMEOUT);
 
-			  /* Empty packet sent - some terminal emulators need this to close session */
-			  if ( result == COM_OK )
-			   {
-			      /* Preparing an empty packet */
-			      aPacketData[PACKET_START_INDEX] = SOH;
-			      aPacketData[PACKET_NUMBER_INDEX] = 0;
-			      aPacketData[PACKET_CNUMBER_INDEX] = 0xFF;
-			      for (i = PACKET_DATA_INDEX; i < (PACKET_SIZE + PACKET_DATA_INDEX); i++)
-			      {
-			        aPacketData [i] = 0x00;
-			      }
+            /* Send CRC/Checksum */
+#ifdef CRC16_F
+            tempCrc = HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&aPacketData[PACKET_DATA_INDEX], pktSize);
+            serial_put_byte(tempCrc >> 8);
+            serial_put_byte(tempCrc & 0xFF);
+#else
+            tempChkSum = calc_checksum(&aPacketData[PACKET_DATA_INDEX], pktSize);
+            Serial_PutByte(tempChkSum);
+#endif
 
-			      /* Send Packet */
-			      HAL_UART_Transmit(&UartHandle, &aPacketData[PACKET_START_INDEX], PACKET_SIZE + PACKET_HEADER_SIZE, NAK_TIMEOUT);
+            /* Wait for ACK */
+            if ((HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) && (aRxCtrl[0] == ACK)) {
+                ackRecpt = 1;
+                if (size > pktSize) {
+                    p_buf_int += pktSize;
+                    size -= pktSize;
+                    if (blkNumber == (USER_FLASH_SIZE / PACKET_1K_SIZE)) {
+                        result = COM_LIMIT;
+                    } else {
+                        blkNumber++;
+                    }
+                }
+                else {
+                    p_buf_int += pktSize;
+                    size = 0;
+                }
+            }
+            else {
+                errors++;
+            }
 
-			      /* Send CRC or Check Sum based on CRC16_F */
-					#ifdef CRC16_F
-						  tempCrc = HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&aPacketData[PACKET_DATA_INDEX], pktSize);
-						  serial_put_byte(tempCrc >> 8);
-						  serial_put_byte(tempCrc & 0xFF);
-					#else /* CRC16_F */
-						  tempChksum = CalcChecksum(&aPacketData[PACKET_DATA_INDEX], pktSize);
-						  serial_put_byte(tempChksum);
-					#endif /* CRC16_F */
+            if (errors >= MAX_ERRORS) {
+                result = COM_ERROR;
+            }
+        }
+    }
 
-			      /* Wait for Ack and 'C' */
-			      if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK)
-			      {
-			    	  if (aRxCtrl[0] == CA)
-					  {
-						if ((HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) && (aRxCtrl[0] == CA))
-						{
-						  HAL_Delay(2);
-						  __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
-						  __HAL_UART_CLEAR_OREFLAG(&UartHandle);
-						  result = COM_ABORT;
-						}
-					  }
-			      }
-			    }
-			    return result; /* file transmitted successfully */
+    /* Send EOT */
+    if (result == COM_OK) {
+        ackRecpt = 0;
+        errors = 0;
+        while ((!ackRecpt) && (result == COM_OK)) {
+            serial_put_byte(EOT);
+
+            if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) {
+                if (aRxCtrl[0] == ACK) {
+                    ackRecpt = 1;
+                }
+                else if (aRxCtrl[0] == CA) {
+                    if ((HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) && (aRxCtrl[0] == CA)) {
+                        HAL_Delay(2);
+                        __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
+                        result = COM_ABORT;
+                    }
+                }
+            }
+            else {
+                errors++;
+            }
+
+            if (errors >= MAX_ERRORS) {
+                result = COM_ERROR;
+            }
+        }
+    }
+
+    /* Send empty packet to close session */
+    if (result == COM_OK) {
+        aPacketData[PACKET_START_INDEX] = SOH;
+        aPacketData[PACKET_NUMBER_INDEX] = 0;
+        aPacketData[PACKET_CNUMBER_INDEX] = 0xFF;
+        for (i = PACKET_DATA_INDEX; i < (PACKET_SIZE + PACKET_DATA_INDEX); i++) {
+            aPacketData[i] = 0x00;
+        }
+
+        HAL_UART_Transmit(&UartHandle, &aPacketData[PACKET_START_INDEX], PACKET_SIZE + PACKET_HEADER_SIZE, NAK_TIMEOUT);
+
+#ifdef CRC16_F
+        tempCrc = HAL_CRC_Calculate(&CrcHandle, (uint32_t*)&aPacketData[PACKET_DATA_INDEX], PACKET_SIZE);
+        serial_put_byte(tempCrc >> 8);
+        serial_put_byte(tempCrc & 0xFF);
+#else
+        tempChkSum = calc_checksum(&aPacketData[PACKET_DATA_INDEX], PACKET_SIZE);
+        Serial_PutByte(tempChkSum);
+#endif
+
+        if (HAL_UART_Receive(&UartHandle, &aRxCtrl[0], 1, NAK_TIMEOUT) == HAL_OK) {
+            if (aRxCtrl[0] == CA) {
+                HAL_Delay(2);
+                __HAL_UART_FLUSH_DRREGISTER(&UartHandle);
+                result = COM_ABORT;
+            }
+        }
+    }
+
+    return result;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

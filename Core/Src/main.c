@@ -74,7 +74,6 @@ static void MX_TIM2_Init(void);
 static void MX_CRC_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-static void goto_application( void );
 static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
 static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);

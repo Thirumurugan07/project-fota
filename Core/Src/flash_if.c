@@ -21,12 +21,8 @@ uint32_t get_sector(uint32_t Address)
   */
 void FLASH_IF_init(void) {
 /* Unlocking hte program memroy*/
-	if (HAL_FLASH_Unlock() != HAL_OK) {
-		serial_put_string((uint8_t*)"Error occured while unlocking the flash operations\r\n");
-	}
-
-	// clearing the error flags before doing some flash operations
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_PGSERR | FLASH_FLAG_WRPERR | FLASH_FLAG_OPERR);
+	 __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
+	                         FLASH_FLAG_PGSERR);
 
 
 }
@@ -42,19 +38,23 @@ uint32_t FLASH_IF_erase(uint32_t StartSector) {
 	FLASH_EraseInitTypeDef desc;
 	uint32_t result = FLASHIF_OK;
 	uint32_t sectorError;
+	uint32_t userStartSector;
 
 	  /* Unlock the Flash to enable the flash control register access *************/
+
+	if (HAL_FLASH_Unlock() != HAL_OK) {
+		serial_put_string((uint8_t*)"Erase failed at unlock itself 1");
+		result = FLASHIF_ERASEKO;
+	}
 	FLASH_IF_init();
 
 
 	desc.TypeErase = FLASH_TYPEERASE_SECTORS;
 	desc.Sector = get_sector(StartSector);
-	desc.NbSectors = 1;
-	desc.Banks = FLASH_BANK_1;
+	desc.NbSectors = 3;
 	desc.VoltageRange = FLASH_VOLTAGE_RANGE_3;
 
 	if (StartSector < USER_FLASH_END_ADDRESS) {
-
 		if (HAL_FLASHEx_Erase(&desc, &sectorError) != HAL_OK) {
 			char msg[50];
 			sprintf(msg, "Erase failed at sector: %lu\n", sectorError);
@@ -67,6 +67,33 @@ uint32_t FLASH_IF_erase(uint32_t StartSector) {
 	else result = FLASHIF_ERASEKO;
 	HAL_FLASH_Lock();
 	return result;
+}
+
+
+void FLASH_IF_disable_all_protection(void) {
+    HAL_FLASH_Unlock();
+    HAL_FLASH_OB_Unlock();
+
+    FLASH_OBProgramInitTypeDef OBInit;
+    HAL_FLASHEx_OBGetConfig(&OBInit);
+
+    // Set RDP to Level 0 (no protection)
+    OBInit.OptionType = OPTIONBYTE_RDP | OPTIONBYTE_WRP;
+    OBInit.RDPLevel = OB_RDP_LEVEL_0;
+    OBInit.WRPSector = 0xFFF; // All sectors
+    OBInit.Banks = FLASH_BANK_1;
+    OBInit.WRPState = OB_WRPSTATE_DISABLE;
+
+    if (HAL_FLASHEx_OBProgram(&OBInit) != HAL_OK) {
+        serial_put_string("Option byte programming failed!");
+    }
+
+    // Launch Option Bytes programming
+    if (HAL_FLASH_OB_Launch() != HAL_OK) {
+    	serial_put_string((uint8_t*)"OB launch failed!");
+    }
+
+    HAL_FLASH_OB_Lock();
 }
 
 /* Public functions ---------------------------------------------------------*/
@@ -83,34 +110,26 @@ uint32_t FLASH_IF_erase(uint32_t StartSector) {
 
 uint32_t FLASH_IF_write(uint32_t destination, uint32_t* p_source, uint32_t length) {
 	uint32_t status = FLASHIF_OK;
-	int i = 0;
+	uint32_t i = 0;
 
 	HAL_FLASH_Unlock();
 
-	for (i = 0; (i < length/2) && (destination <= USER_FLASH_END_ADDRESS - 8);i++) {
+	for (i = 0; (i < length) && (destination <= USER_FLASH_END_ADDRESS - 4); i++) {
+	        /* Word programming (32-bit) */
+	        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, destination, *(p_source + i)) == HAL_OK) {
+	            /* Check the written value */
+	            if (*(uint32_t*)destination != *(p_source + i)) {
+	                status = FLASHIF_WRITINGCTRL_ERROR;
+	                break;
+	            }
+	            destination += 4; // Move to next word
+	        } else {
+	            status = FLASHIF_WRITING_ERROR;
+	            break;
+	        }
+	    }
+	HAL_FLASH_Lock();
 
-
-		/* Device voltage range supposed to be [2.7V to 3.6V], the operation will
-		        be done by word */
-		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, destination, *((uint64_t*)(p_source+2*i))) == HAL_OK) {
-			  /* Check the written value */
-
-			if (*(uint64_t*)destination != *(uint64_t*)(p_source+2*i)) {
-				 /* Flash content doesn't match SRAM content */
-				status = FLASHIF_WRITINGCTRL_ERROR;
-				break;
-			}
-			 /* Increment FLASH destination address */
-			destination += 8;
-		}
-
-		else {
-		       /* Error occurred while writing data in Flash memory */
-			status = FLASHIF_WRITING_ERROR;
-			break;
-		}
-
-	}
 	return status;
 }
 
@@ -127,8 +146,9 @@ uint32_t FLASH_IF_get_write_protection_status(void) {
 	 /* Get the current configuration */
 	HAL_FLASHEx_OBGetConfig(&config);
 
-	 /* Final evaluation of status */
-	if ((config.WRPState == OB_WRPSTATE_ENABLE) && (config.WRPSector != 0)) {
+	 /* Get pages already write protected ****************************************/
+	 /* Check if write protection is enabled for any sectors */
+	if ((config.WRPState == OB_WRPSTATE_ENABLE) && (config.WRPSector & FLASH_SECTOR_TO_BE_PROTECTED)) {
 		protected = FLASHIF_PROTECTION_WRPENABLED;
 	}
 	return protected;
@@ -141,44 +161,57 @@ uint32_t FLASH_IF_get_write_protection_status(void) {
   * @retval uint32_t FLASHIF_OK if change is applied.
   */
 
-uint32_t FLASH_IF_write_protection_config(uint32_t protectionState) {
+uint32_t FLASH_IF_write_protection_config(uint32_t protectionState)
+{
+    FLASH_OBProgramInitTypeDef config;
+    HAL_StatusTypeDef status;
 
-	FLASH_OBProgramInitTypeDef config;
+    // Unlock the Flash to enable the flash control register access
+    if (HAL_FLASH_Unlock() != HAL_OK) {
+        serial_put_string((uint8_t *)"Error: Failed to unlock Flash control register\r\n");
+        return FLASHIF_PROTECTION_ERROR;
+    }
 
-	HAL_FLASH_Unlock();
+    // Unlock the Option Bytes
+    if (HAL_FLASH_OB_Unlock() != HAL_OK) {
+        serial_put_string((uint8_t *)"Error: Failed to unlock Option Bytes\r\n");
+        HAL_FLASH_Lock(); // Lock flash back before returning
+        return FLASHIF_PROTECTION_ERROR;
+    }
 
-	  /* Unlock the Options Bytes *************************************************/
-	HAL_FLASH_OB_Unlock();
+    // Prepare Option Bytes configuration
+    config.OptionType = OPTIONBYTE_WRP;
+    config.Banks = FLASH_BANK_1;
+    config.WRPSector = FLASH_SECTOR_TO_BE_PROTECTED;
 
-	  /* Get the current Option Bytes configuration */
-	HAL_FLASHEx_OBGetConfig(&config);
+    if (protectionState == FLASHIF_WRP_ENABLE) {
+        config.WRPState = OB_WRPSTATE_ENABLE;
+    } else {
+        config.WRPState = OB_WRPSTATE_DISABLE;
+    }
 
-	 config.OptionType = OPTIONBYTE_WRP;
-	 config.Banks = FLASH_BANK_1;
-	if (protectionState == FLASHIF_WRP_ENABLE) {
-		config.WRPState = OB_WRPSTATE_ENABLE;
-		config.WRPSector = (OB_WRP_SECTOR_5 | OB_WRP_SECTOR_6 | OB_WRP_SECTOR_7);
-	}
-	else {
-		config.WRPState = OB_WRPSTATE_DISABLE;
-	    // To disable protection, set WRPSector to 0x00 (no protection)
-		config.WRPSector = (OB_WRP_SECTOR_5 | OB_WRP_SECTOR_6 | OB_WRP_SECTOR_7);
-	}
-	HAL_StatusTypeDef result;
+    // Program the Option Bytes
+    status = HAL_FLASHEx_OBProgram(&config);
+    if (status != HAL_OK) {
+        serial_put_string((uint8_t *)"Error: Failed to program Option Bytes\r\n");
+        HAL_FLASH_OB_Lock();
+        HAL_FLASH_Lock();
+        return FLASHIF_PROTECTION_ERROR;
+    }
 
-	// Program Option Bytes
-	    if (HAL_FLASHEx_OBProgram(&config) != HAL_OK) {
-	        return FLASHIF_PROTECTION_ERROR;
-	    }
+    // Launch Option Bytes loading (causes a system reset)
+    status = HAL_FLASH_OB_Launch();
+    if (status != HAL_OK) {
+        serial_put_string((uint8_t *)"Error: Failed to launch Option Bytes reload\r\n");
+        HAL_FLASH_OB_Lock();
+        HAL_FLASH_Lock();
+        return FLASHIF_PROTECTION_ERROR;
+    }
 
-	    // Launch the Option Bytes loading process
-	    if (HAL_FLASH_OB_Launch() != HAL_OK) {
-	        return FLASHIF_PROTECTION_ERROR;
-	    }
+    HAL_FLASH_OB_Lock();
+    HAL_FLASH_Lock();
 
-	    HAL_FLASH_OB_Lock();
-	    HAL_FLASH_Lock();
-	return FLASHIF_OK;
+    return FLASHIF_OK;
 }
 
 
