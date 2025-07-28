@@ -8141,7 +8141,7 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
 LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.macos64_1.1.0.202410301201/tools/bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libm.a
 LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.macos64_1.1.0.202410301201/tools/bin/../lib/gcc/arm-none-eabi/12.3.1/thumb/v7e-m+fp/hard/libgcc.a
 
-.debug_info     0x00000000    0x1f2b8
+.debug_info     0x00000000    0x1f2a6
  .debug_info    0x00000000      0x700 ./Core/Src/common.o
  .debug_info    0x00000700      0x5e9 ./Core/Src/flash_if.o
  .debug_info    0x00000ce9      0xcaf ./Core/Src/ifx_i2c.o
@@ -8150,43 +8150,43 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
  .debug_info    0x00002eed      0xe7a ./Core/Src/ifx_i2c_physical_layer.o
  .debug_info    0x00003d67      0xf8c ./Core/Src/ifx_i2c_presentation_layer.o
  .debug_info    0x00004cf3      0xbff ./Core/Src/ifx_i2c_transport_layer.o
- .debug_info    0x000058f2     0x1bce ./Core/Src/main.o
- .debug_info    0x000074c0      0x861 ./Core/Src/menu.o
- .debug_info    0x00007d21     0x29cc ./Core/Src/optiga_cmd.o
- .debug_info    0x0000a6ed      0xc7f ./Core/Src/optiga_comms_ifx_i2c.o
- .debug_info    0x0000b36c      0x1b2 ./Core/Src/optiga_lib_common.o
- .debug_info    0x0000b51e      0xaca ./Core/Src/optiga_util.o
- .debug_info    0x0000bfe8       0xd9 ./Core/Src/pal.o
- .debug_info    0x0000c0c1      0x2c8 ./Core/Src/pal_crypt_stub.o
- .debug_info    0x0000c389      0x229 ./Core/Src/pal_gpio.o
- .debug_info    0x0000c5b2      0x8f3 ./Core/Src/pal_i2c.o
- .debug_info    0x0000cea5      0x741 ./Core/Src/pal_ifx_i2c_config.o
- .debug_info    0x0000d5e6      0x23d ./Core/Src/pal_os_datastore.o
- .debug_info    0x0000d823      0x8c6 ./Core/Src/pal_os_event.o
- .debug_info    0x0000e0e9      0x1cc ./Core/Src/pal_os_lock.o
- .debug_info    0x0000e2b5      0x23a ./Core/Src/pal_os_memory.o
- .debug_info    0x0000e4ef      0x175 ./Core/Src/pal_os_timer.o
- .debug_info    0x0000e664     0x1326 ./Core/Src/stm32f4xx_hal_msp.o
- .debug_info    0x0000f98a      0xc9d ./Core/Src/stm32f4xx_it.o
- .debug_info    0x00010627      0x6a3 ./Core/Src/syscalls.o
- .debug_info    0x00010cca      0x168 ./Core/Src/sysmem.o
- .debug_info    0x00010e32      0x53e ./Core/Src/system_stm32f4xx.o
- .debug_info    0x00011370      0xdbf ./Core/Src/ymodem.o
- .debug_info    0x0001212f       0x30 ./Core/Startup/startup_stm32f401retx.o
- .debug_info    0x0001215f      0x8bb ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
- .debug_info    0x00012a1a      0xcf6 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
- .debug_info    0x00013710      0x37d ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o
- .debug_info    0x00013a8d      0x8e6 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
- .debug_info    0x00014373      0x589 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.o
- .debug_info    0x000148fc      0x7d8 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.o
- .debug_info    0x000150d4      0x6f9 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
- .debug_info    0x000157cd     0x2426 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
- .debug_info    0x00017bf3      0x905 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
- .debug_info    0x000184f8     0x2996 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
- .debug_info    0x0001ae8e     0x14d4 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
- .debug_info    0x0001c362     0x2f56 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
+ .debug_info    0x000058f2     0x1bbc ./Core/Src/main.o
+ .debug_info    0x000074ae      0x861 ./Core/Src/menu.o
+ .debug_info    0x00007d0f     0x29cc ./Core/Src/optiga_cmd.o
+ .debug_info    0x0000a6db      0xc7f ./Core/Src/optiga_comms_ifx_i2c.o
+ .debug_info    0x0000b35a      0x1b2 ./Core/Src/optiga_lib_common.o
+ .debug_info    0x0000b50c      0xaca ./Core/Src/optiga_util.o
+ .debug_info    0x0000bfd6       0xd9 ./Core/Src/pal.o
+ .debug_info    0x0000c0af      0x2c8 ./Core/Src/pal_crypt_stub.o
+ .debug_info    0x0000c377      0x229 ./Core/Src/pal_gpio.o
+ .debug_info    0x0000c5a0      0x8f3 ./Core/Src/pal_i2c.o
+ .debug_info    0x0000ce93      0x741 ./Core/Src/pal_ifx_i2c_config.o
+ .debug_info    0x0000d5d4      0x23d ./Core/Src/pal_os_datastore.o
+ .debug_info    0x0000d811      0x8c6 ./Core/Src/pal_os_event.o
+ .debug_info    0x0000e0d7      0x1cc ./Core/Src/pal_os_lock.o
+ .debug_info    0x0000e2a3      0x23a ./Core/Src/pal_os_memory.o
+ .debug_info    0x0000e4dd      0x175 ./Core/Src/pal_os_timer.o
+ .debug_info    0x0000e652     0x1326 ./Core/Src/stm32f4xx_hal_msp.o
+ .debug_info    0x0000f978      0xc9d ./Core/Src/stm32f4xx_it.o
+ .debug_info    0x00010615      0x6a3 ./Core/Src/syscalls.o
+ .debug_info    0x00010cb8      0x168 ./Core/Src/sysmem.o
+ .debug_info    0x00010e20      0x53e ./Core/Src/system_stm32f4xx.o
+ .debug_info    0x0001135e      0xdbf ./Core/Src/ymodem.o
+ .debug_info    0x0001211d       0x30 ./Core/Startup/startup_stm32f401retx.o
+ .debug_info    0x0001214d      0x8bb ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
+ .debug_info    0x00012a08      0xcf6 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
+ .debug_info    0x000136fe      0x37d ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o
+ .debug_info    0x00013a7b      0x8e6 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
+ .debug_info    0x00014361      0x589 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.o
+ .debug_info    0x000148ea      0x7d8 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.o
+ .debug_info    0x000150c2      0x6f9 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
+ .debug_info    0x000157bb     0x2426 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
+ .debug_info    0x00017be1      0x905 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
+ .debug_info    0x000184e6     0x2996 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
+ .debug_info    0x0001ae7c     0x14d4 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
+ .debug_info    0x0001c350     0x2f56 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
 
-.debug_abbrev   0x00000000     0x54c6
+.debug_abbrev   0x00000000     0x54b1
  .debug_abbrev  0x00000000      0x1df ./Core/Src/common.o
  .debug_abbrev  0x000001df      0x230 ./Core/Src/flash_if.o
  .debug_abbrev  0x0000040f      0x26e ./Core/Src/ifx_i2c.o
@@ -8195,41 +8195,41 @@ LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.id
  .debug_abbrev  0x00000a6c      0x269 ./Core/Src/ifx_i2c_physical_layer.o
  .debug_abbrev  0x00000cd5      0x272 ./Core/Src/ifx_i2c_presentation_layer.o
  .debug_abbrev  0x00000f47      0x256 ./Core/Src/ifx_i2c_transport_layer.o
- .debug_abbrev  0x0000119d      0x431 ./Core/Src/main.o
- .debug_abbrev  0x000015ce      0x246 ./Core/Src/menu.o
- .debug_abbrev  0x00001814      0x2fa ./Core/Src/optiga_cmd.o
- .debug_abbrev  0x00001b0e      0x2b1 ./Core/Src/optiga_comms_ifx_i2c.o
- .debug_abbrev  0x00001dbf       0xc2 ./Core/Src/optiga_lib_common.o
- .debug_abbrev  0x00001e81      0x2a7 ./Core/Src/optiga_util.o
- .debug_abbrev  0x00002128       0x58 ./Core/Src/pal.o
- .debug_abbrev  0x00002180       0xc5 ./Core/Src/pal_crypt_stub.o
- .debug_abbrev  0x00002245      0x161 ./Core/Src/pal_gpio.o
- .debug_abbrev  0x000023a6      0x1e7 ./Core/Src/pal_i2c.o
- .debug_abbrev  0x0000258d      0x14d ./Core/Src/pal_ifx_i2c_config.o
- .debug_abbrev  0x000026da       0xe0 ./Core/Src/pal_os_datastore.o
- .debug_abbrev  0x000027ba      0x23c ./Core/Src/pal_os_event.o
- .debug_abbrev  0x000029f6       0xf9 ./Core/Src/pal_os_lock.o
- .debug_abbrev  0x00002aef       0xea ./Core/Src/pal_os_memory.o
- .debug_abbrev  0x00002bd9       0xd2 ./Core/Src/pal_os_timer.o
- .debug_abbrev  0x00002cab      0x23c ./Core/Src/stm32f4xx_hal_msp.o
- .debug_abbrev  0x00002ee7      0x1dc ./Core/Src/stm32f4xx_it.o
- .debug_abbrev  0x000030c3      0x1b6 ./Core/Src/syscalls.o
- .debug_abbrev  0x00003279       0xbc ./Core/Src/sysmem.o
- .debug_abbrev  0x00003335      0x11a ./Core/Src/system_stm32f4xx.o
- .debug_abbrev  0x0000344f      0x2f0 ./Core/Src/ymodem.o
- .debug_abbrev  0x0000373f       0x24 ./Core/Startup/startup_stm32f401retx.o
- .debug_abbrev  0x00003763      0x24b ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
- .debug_abbrev  0x000039ae      0x31d ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
- .debug_abbrev  0x00003ccb      0x180 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o
- .debug_abbrev  0x00003e4b      0x221 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
- .debug_abbrev  0x0000406c      0x27c ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.o
- .debug_abbrev  0x000042e8      0x25d ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.o
- .debug_abbrev  0x00004545      0x1d3 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
- .debug_abbrev  0x00004718      0x2bc ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
- .debug_abbrev  0x000049d4      0x2b6 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
- .debug_abbrev  0x00004c8a      0x28b ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
- .debug_abbrev  0x00004f15      0x296 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
- .debug_abbrev  0x000051ab      0x31b ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
+ .debug_abbrev  0x0000119d      0x41c ./Core/Src/main.o
+ .debug_abbrev  0x000015b9      0x246 ./Core/Src/menu.o
+ .debug_abbrev  0x000017ff      0x2fa ./Core/Src/optiga_cmd.o
+ .debug_abbrev  0x00001af9      0x2b1 ./Core/Src/optiga_comms_ifx_i2c.o
+ .debug_abbrev  0x00001daa       0xc2 ./Core/Src/optiga_lib_common.o
+ .debug_abbrev  0x00001e6c      0x2a7 ./Core/Src/optiga_util.o
+ .debug_abbrev  0x00002113       0x58 ./Core/Src/pal.o
+ .debug_abbrev  0x0000216b       0xc5 ./Core/Src/pal_crypt_stub.o
+ .debug_abbrev  0x00002230      0x161 ./Core/Src/pal_gpio.o
+ .debug_abbrev  0x00002391      0x1e7 ./Core/Src/pal_i2c.o
+ .debug_abbrev  0x00002578      0x14d ./Core/Src/pal_ifx_i2c_config.o
+ .debug_abbrev  0x000026c5       0xe0 ./Core/Src/pal_os_datastore.o
+ .debug_abbrev  0x000027a5      0x23c ./Core/Src/pal_os_event.o
+ .debug_abbrev  0x000029e1       0xf9 ./Core/Src/pal_os_lock.o
+ .debug_abbrev  0x00002ada       0xea ./Core/Src/pal_os_memory.o
+ .debug_abbrev  0x00002bc4       0xd2 ./Core/Src/pal_os_timer.o
+ .debug_abbrev  0x00002c96      0x23c ./Core/Src/stm32f4xx_hal_msp.o
+ .debug_abbrev  0x00002ed2      0x1dc ./Core/Src/stm32f4xx_it.o
+ .debug_abbrev  0x000030ae      0x1b6 ./Core/Src/syscalls.o
+ .debug_abbrev  0x00003264       0xbc ./Core/Src/sysmem.o
+ .debug_abbrev  0x00003320      0x11a ./Core/Src/system_stm32f4xx.o
+ .debug_abbrev  0x0000343a      0x2f0 ./Core/Src/ymodem.o
+ .debug_abbrev  0x0000372a       0x24 ./Core/Startup/startup_stm32f401retx.o
+ .debug_abbrev  0x0000374e      0x24b ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
+ .debug_abbrev  0x00003999      0x31d ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
+ .debug_abbrev  0x00003cb6      0x180 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o
+ .debug_abbrev  0x00003e36      0x221 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
+ .debug_abbrev  0x00004057      0x27c ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.o
+ .debug_abbrev  0x000042d3      0x25d ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.o
+ .debug_abbrev  0x00004530      0x1d3 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
+ .debug_abbrev  0x00004703      0x2bc ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
+ .debug_abbrev  0x000049bf      0x2b6 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
+ .debug_abbrev  0x00004c75      0x28b ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
+ .debug_abbrev  0x00004f00      0x296 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
+ .debug_abbrev  0x00005196      0x31b ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
 
 .debug_aranges  0x00000000     0x1ac8
  .debug_aranges

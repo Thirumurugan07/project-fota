@@ -76,7 +76,7 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
-
+void optiga_main_logic();
 
 #ifdef __GNUC__
   /* With GCC, small printf (option LD Linker->Libraries->Small printf
@@ -479,7 +479,6 @@ void optiga_main_logic(void)
         {
             pal_os_event_trigger_registered_callback(); // CRUCIAL for bare metal
         }
-        HAL_Delay(100);
         if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
         {
             printf("OPTIGA Trust M initialized successfully.\r\n");
