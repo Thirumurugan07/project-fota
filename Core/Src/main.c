@@ -74,7 +74,6 @@ static void MX_TIM2_Init(void);
 static void MX_CRC_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
 static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
@@ -99,6 +98,10 @@ int fputc(int ch, FILE *f)
 /* USER CODE BEGIN 0 */
 extern pFunction jumpToApplication;
 extern uint32_t jumpAddress;
+extern pal_gpio_t optiga_vdd_0;
+extern pal_gpio_t optiga_reset_0;
+extern pal_i2c_t optiga_pal_i2c_context_0;
+static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
 /* USER CODE END 0 */
 
 /**
@@ -147,6 +150,7 @@ int main(void)
 
    // optiga_main_logic();
     /* Check the GPIO for 3 seconds */
+  	  optiga_main_logic();
       GPIO_PinState OTA_Pin_state;
       uint32_t end_tick = HAL_GetTick() + 3000;   // from now to 3 Seconds
 
