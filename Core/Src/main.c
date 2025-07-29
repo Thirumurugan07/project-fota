@@ -28,6 +28,7 @@
 #include "optiga/pal/pal_gpio.h"
 #include "optiga/pal/pal_os_event.h"
 #include "optiga/pal/pal_os_timer.h"
+#include "optiga/optiga_crypt.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include "etx_ota_update.h"
@@ -36,11 +37,16 @@
 #define BOOTLOADER_START_ADDR  0x08020000
 #define SHA_SIZE               32
 #define HASH_CALC_LEN          (13028)
-#define HASH_OID              0xE0E8  // user object, adjust as needed
+
+/* Update or Add these definitions */
+#define SIGNATURE_SIZE          71
+#define SIGNATURE_OFFSET        13028  // location of signature in OTA buffer
+#define FIRMWARE_TOTAL_SIZE     13099
+#define SIGNATURE_OID           0xE0E8 // assuming public key is in 0xE0F1
 
 static uint8_t expected_hash[32];
 static uint8_t calc_hash[32];
-static uint16_t hash_len = sizeof(expected_hash);
+static uint8_t firmware_signature[SIGNATURE_SIZE];
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,48 +117,122 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 }
 
-bool verify_bootloader_hash(optiga_util_t * util)
+//bool verify_bootloader_hash(optiga_util_t * util)
+//{
+//    mbedtls_sha256_context ctx;
+//
+//    memset(expected_hash, 0, sizeof(expected_hash));
+//    memset(calc_hash, 0, sizeof(calc_hash));
+//
+//    mbedtls_sha256_init(&ctx);
+//    mbedtls_sha256_starts_ret(&ctx, 0);
+//    const uint8_t *bl_ptr = (const uint8_t*)BOOTLOADER_START_ADDR;
+//    mbedtls_sha256_update_ret(&ctx, bl_ptr, HASH_CALC_LEN);
+//    mbedtls_sha256_finish_ret(&ctx, calc_hash);
+//
+//    optiga_lib_status = OPTIGA_LIB_BUSY;
+//    hash_len = sizeof(expected_hash); // Important: reset length before read
+//    optiga_util_read_data(util, HASH_OID, 0, expected_hash, &hash_len);
+//
+//    while (optiga_lib_status == OPTIGA_LIB_BUSY)
+//        pal_os_event_trigger_registered_callback();
+//
+//    if (optiga_lib_status != OPTIGA_LIB_SUCCESS || hash_len != 32) {
+//        printf("OPTIGA read error! 0x%04X len=%u\n", optiga_lib_status, hash_len);
+//        return false;
+//    }
+//
+//    printf("Calculated Hash: ");
+//    for (int i = 0; i < 32; i++) {
+//        printf("%02X", calc_hash[i]);
+//    }
+//    printf("\n");
+//
+//    printf("Bootloader hash verified.\n");
+//    return true;
+//}
+
+bool verify_firmware_signature(optiga_util_t *util)
 {
+    uint8_t firmware_data[HASH_CALC_LEN];
+    uint8_t calc_hash[32];
+    uint8_t firmware_signature[SIGNATURE_SIZE];
+
+    // Read firmware data from flash
+    memcpy(firmware_data, (uint8_t *)BOOTLOADER_START_ADDR, HASH_CALC_LEN);
+
+    // Calculate SHA-256
     mbedtls_sha256_context ctx;
-
-    memset(expected_hash, 0, sizeof(expected_hash));
-    memset(calc_hash, 0, sizeof(calc_hash));
-
     mbedtls_sha256_init(&ctx);
-    mbedtls_sha256_starts_ret(&ctx, 0);
-    const uint8_t *bl_ptr = (const uint8_t*)BOOTLOADER_START_ADDR;
-    mbedtls_sha256_update_ret(&ctx, bl_ptr, HASH_CALC_LEN);
+    mbedtls_sha256_starts_ret(&ctx, 0);  // 0 = SHA-256 (not 224)
+    mbedtls_sha256_update_ret(&ctx, firmware_data, HASH_CALC_LEN);
     mbedtls_sha256_finish_ret(&ctx, calc_hash);
+    mbedtls_sha256_free(&ctx);
+
+    printf("\r\n🔹 Calculated SHA-256 Hash (%d bytes):\r\n", sizeof(calc_hash));
+    for (int i = 0; i < sizeof(calc_hash); i++)
+        printf("%02X", calc_hash[i]);
+    printf("\r\n");
+
+    // Read digital signature from flash
+    memcpy(firmware_signature, (uint8_t *)(BOOTLOADER_START_ADDR + SIGNATURE_OFFSET), SIGNATURE_SIZE);
+
+    printf("🔹 Firmware Signature (%d bytes):\r\n", SIGNATURE_SIZE);
+    for (int i = 0; i < SIGNATURE_SIZE; i++)
+        printf("%02X", firmware_signature[i]);
+    printf("\r\n");
+
+    // Allocate memory and read public key from OID
+    uint8_t public_key[80];
+    uint16_t public_key_len = sizeof(public_key);
+
+    optiga_lib_status = optiga_util_read_data(util, SIGNATURE_OID, 0, public_key, &public_key_len);
+    if (optiga_lib_status != OPTIGA_LIB_SUCCESS)
+    {
+        printf("❌ Failed to read public key from OID 0x%04X\r\n", SIGNATURE_OID);
+        return false;
+    }
+
+    printf("🔹 Public Key (%d bytes) from OID 0x%04X:\r\n", public_key_len, SIGNATURE_OID);
+    for (int i = 0; i < public_key_len; i++)
+        printf("%02X", public_key[i]);
+    printf("\r\n");
+
+    // Verify signature
+    optiga_crypt_t *me_crypt = optiga_crypt_create(0, optiga_util_callback, NULL);
+    if (!me_crypt)
+    {
+        printf("❌ Failed to create OPTIGA crypt instance!\r\n");
+        return false;
+    }
 
     optiga_lib_status = OPTIGA_LIB_BUSY;
-    hash_len = sizeof(expected_hash); // Important: reset length before read
-    optiga_util_read_data(util, HASH_OID, 0, expected_hash, &hash_len);
+    optiga_crypt_ecdsa_verify(me_crypt,
+                               calc_hash,
+                               sizeof(calc_hash),
+                               firmware_signature,
+                               SIGNATURE_SIZE,
+                               OPTIGA_CRYPT_OID_DATA,
+                               SIGNATURE_OID);
 
     while (optiga_lib_status == OPTIGA_LIB_BUSY)
         pal_os_event_trigger_registered_callback();
 
-    if (optiga_lib_status != OPTIGA_LIB_SUCCESS || hash_len != 32) {
-        printf("OPTIGA read error! 0x%04X len=%u\n", optiga_lib_status, hash_len);
+    optiga_crypt_destroy(me_crypt);
+
+    if (optiga_lib_status != OPTIGA_LIB_SUCCESS)
+    {
+        printf("❌ Signature verification FAILED! Status: 0x%04X\r\n", optiga_lib_status);
         return false;
     }
 
-    printf("Calculated Hash: ");
-    for (int i = 0; i < 32; i++) {
-        printf("%02X", calc_hash[i]);
-    }
-    printf("\n");
-//    printf("Calculated Hash: ");
-//       for (int i = 0; i < 32; i++) {
-//           printf("%02X", expected_hash[i]);
-//       }
-
-//    if (memcmp(calc_hash, expected_hash, 32) != 0) {
-//        printf("Hash mismatch!\n");
-//        return false;
-//    }
-
-    printf("Bootloader hash verified.\n");
+    printf("✅ Firmware signature verified successfully.\r\n");
     return true;
+}
+/* Replace verify_bootloader_hash() with combined hash+signature check */
+bool verify_firmware_integrity(optiga_util_t *util)
+{
+    return verify_firmware_signature(util);
 }
 void optiga_main_logic(void)
 {
@@ -194,16 +274,14 @@ void optiga_main_logic(void)
         }
     }
 
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);  // Turn ON LED if you want
-
-    if (verify_bootloader_hash(me_util)) {
-             goto_application();
-         } else {
-             while (1) {
-                 HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14); // blink red LED
-                 HAL_Delay(500);
-             }
-         }
+    if (verify_firmware_integrity(me_util)) {
+            goto_application();
+        } else {
+            while (1) {
+                HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+                HAL_Delay(500);
+            }
+        }
 }
 
 

@@ -44,7 +44,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../optiga/include/optiga/pal/pal.h \
  ../optiga/include/optiga/pal/pal_gpio.h \
  ../optiga/include/optiga/pal/pal_os_event.h \
- ../optiga/include/optiga/pal/pal_os_timer.h ../Core/Inc/etx_ota_update.h \
+ ../optiga/include/optiga/pal/pal_os_timer.h \
+ ../optiga/include/optiga/optiga_crypt.h ../Core/Inc/etx_ota_update.h \
  ../Core/Inc/mbedtls/sha256.h ../Core/Inc/mbedtls/config.h \
  ../Core/Inc/mbedtls/check_config.h
 ../Core/Inc/main.h:
@@ -94,6 +95,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../optiga/include/optiga/pal/pal_gpio.h:
 ../optiga/include/optiga/pal/pal_os_event.h:
 ../optiga/include/optiga/pal/pal_os_timer.h:
+../optiga/include/optiga/optiga_crypt.h:
 ../Core/Inc/etx_ota_update.h:
 ../Core/Inc/mbedtls/sha256.h:
 ../Core/Inc/mbedtls/config.h:
