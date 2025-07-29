@@ -43,6 +43,11 @@
 #define SIGNATURE_OFFSET        13028  // location of signature in OTA buffer
 #define FIRMWARE_TOTAL_SIZE     13099
 #define SIGNATURE_OID           0xE0E8 // assuming public key is in 0xE0F1
+#define APPLICATION_ADDRESS 0x08020000
+
+typedef void (*pFunction)(void);
+pFunction jumpToApplication;
+uint32_t jumpAddress;
 
 static uint8_t expected_hash[32];
 static uint8_t calc_hash[32];
@@ -102,7 +107,10 @@ extern pal_gpio_t optiga_vdd_0;
 extern pal_gpio_t optiga_reset_0;
 extern pal_i2c_t optiga_pal_i2c_context_0;
 static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
-
+//void (*pFunction)(void);
+//
+//pFunction jumpToApplication;
+//uint32_t jumpAddress;
 // Async callback
 static void optiga_util_callback(void *context, optiga_lib_status_t return_status)
 {
@@ -587,37 +595,21 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
 static void goto_application(void)
 {
     printf("Jumping to application...\r\n");
-    HAL_Delay(1000);
 
-    uint32_t app_stack = *(volatile uint32_t*)ETX_APP_FLASH_ADDR;
-    uint32_t app_reset_handler = *(volatile uint32_t*)(ETX_APP_FLASH_ADDR + 4);
+    // Check if the value at the application's start is a valid stack pointer (RAM range)
+    jumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
+   	      /* Jump to user application */
+   	      jumpToApplication = (pFunction)jumpAddress;
+   	      /* Initialize user application's Stack Pointer */
+   	      __set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
+   	      jumpToApplication();
 
-    // Check if the app address is valid (optional safety check)
-    if ((app_stack & 0x2FFE0000) != 0x20000000) {
-        printf("Invalid application stack pointer.\r\n");
-        return;
-    }
-
-    // Deinit all HAL and peripherals
-    HAL_RCC_DeInit();
-    HAL_DeInit();
-    __disable_irq();
-
-    // Set main stack pointer
-    __set_MSP(app_stack);
-
-    // Set vector table location (important for interrupts to work correctly)
-    SCB->VTOR = ETX_APP_FLASH_ADDR;
-
-    // Jump to application reset handler
-    void (*app_entry)(void) = (void (*)(void))app_reset_handler;
-    app_entry();
-
-    // Should never return here
-    while(1);
+    while (1); // should never be hit if jump is successful
 }
 /* USER CODE END 4 */
 
