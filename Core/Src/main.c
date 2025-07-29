@@ -117,40 +117,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 }
 
-//bool verify_bootloader_hash(optiga_util_t * util)
-//{
-//    mbedtls_sha256_context ctx;
-//
-//    memset(expected_hash, 0, sizeof(expected_hash));
-//    memset(calc_hash, 0, sizeof(calc_hash));
-//
-//    mbedtls_sha256_init(&ctx);
-//    mbedtls_sha256_starts_ret(&ctx, 0);
-//    const uint8_t *bl_ptr = (const uint8_t*)BOOTLOADER_START_ADDR;
-//    mbedtls_sha256_update_ret(&ctx, bl_ptr, HASH_CALC_LEN);
-//    mbedtls_sha256_finish_ret(&ctx, calc_hash);
-//
-//    optiga_lib_status = OPTIGA_LIB_BUSY;
-//    hash_len = sizeof(expected_hash); // Important: reset length before read
-//    optiga_util_read_data(util, HASH_OID, 0, expected_hash, &hash_len);
-//
-//    while (optiga_lib_status == OPTIGA_LIB_BUSY)
-//        pal_os_event_trigger_registered_callback();
-//
-//    if (optiga_lib_status != OPTIGA_LIB_SUCCESS || hash_len != 32) {
-//        printf("OPTIGA read error! 0x%04X len=%u\n", optiga_lib_status, hash_len);
-//        return false;
-//    }
-//
-//    printf("Calculated Hash: ");
-//    for (int i = 0; i < 32; i++) {
-//        printf("%02X", calc_hash[i]);
-//    }
-//    printf("\n");
-//
-//    printf("Bootloader hash verified.\n");
-//    return true;
-//}
 
 bool verify_firmware_signature(optiga_util_t *util)
 {
