@@ -150,7 +150,7 @@ int main(void)
 
    // optiga_main_logic();
     /* Check the GPIO for 3 seconds */
-  	  optiga_main_logic();
+  	//  optiga_main_logic();
       GPIO_PinState OTA_Pin_state;
       uint32_t end_tick = HAL_GetTick() + 3000;   // from now to 3 Seconds
 

@@ -10,4 +10,4 @@
 ../Core/Src/main.c:443:13:optiga_util_callback	16	static
 ../Core/Src/main.c:448:6:HAL_TIM_PeriodElapsedCallback	16	static
 ../Core/Src/main.c:455:6:optiga_main_logic	16	static
-../Core/Src/main.c:538:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:537:6:Error_Handler	4	static,ignoring_inline_asm

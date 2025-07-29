@@ -399,7 +399,7 @@ COM_StatusTypeDef ymodem_receive(uint32_t* p_size) {
             }
         }
     }
-
+    HAL_Delay(5000);
     /* Final status report */
     if (result == COM_OK) {
         serial_put_string((uint8_t*)"\r\nYMODEM Success: ");
