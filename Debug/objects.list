@@ -1,4 +1,3 @@
-"./Core/Src/etx_ota_update.o"
 "./Core/Src/example_optiga_init_deinit.o"
 "./Core/Src/example_optiga_util_read_data.o"
 "./Core/Src/example_optiga_util_write_data.o"

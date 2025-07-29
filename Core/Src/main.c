@@ -41,7 +41,7 @@
 #define SIGNATURE_SIZE          71
 #define SIGNATURE_OFFSET        13028  // location of signature in OTA buffer
 #define FIRMWARE_TOTAL_SIZE     13099
-#define SIGNATURE_OID           0xE0E8 // assuming public key is in 0xE0F1
+#define SIGNATURE_OID    0xE0E8 // assuming public key is in 0xE0F1
 #define APPLICATION_ADDRESS 0x08020000
 
 typedef void (*pFunction)(void);
@@ -129,25 +129,34 @@ bool verify_firmware_signature(optiga_util_t *util)
 {
     uint8_t firmware_data[HASH_CALC_LEN];
     uint8_t calc_hash[32];
+    uint8_t expected_hash[32];  // Optional expected hash stored in flash
     uint8_t firmware_signature[SIGNATURE_SIZE];
 
-    // Read firmware data from flash
+    // 1. Read firmware data from flash
     memcpy(firmware_data, (uint8_t *)BOOTLOADER_START_ADDR, HASH_CALC_LEN);
 
-    // Calculate SHA-256
+    // 2. Calculate SHA-256 hash of the firmware
     mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
-    mbedtls_sha256_starts_ret(&ctx, 0);  // 0 = SHA-256 (not 224)
+    mbedtls_sha256_starts_ret(&ctx, 0);
     mbedtls_sha256_update_ret(&ctx, firmware_data, HASH_CALC_LEN);
     mbedtls_sha256_finish_ret(&ctx, calc_hash);
     mbedtls_sha256_free(&ctx);
 
-    printf("\r\n🔹 Calculated SHA-256 Hash (%d bytes):\r\n", sizeof(calc_hash));
+    printf("\r\n🔹 Calculated SHA-256 Hash:\r\n");
     for (int i = 0; i < sizeof(calc_hash); i++)
         printf("%02X", calc_hash[i]);
     printf("\r\n");
+//
+//    // 3. [Optional] Compare to expected hash (e.g. stored at known flash location)
+//    memcpy(expected_hash, (uint8_t *)(BOOTLOADER_START_ADDR), sizeof(expected_hash));
+//    if (memcmp(expected_hash, calc_hash, sizeof(calc_hash)) != 0)
+//    {
+//        printf("❌ Firmware hash mismatch! Aborting.\r\n");
+//        return false;
+//    }
 
-    // Read digital signature from flash
+    // 4. Read firmware signature from flash
     memcpy(firmware_signature, (uint8_t *)(BOOTLOADER_START_ADDR + SIGNATURE_OFFSET), SIGNATURE_SIZE);
 
     printf("🔹 Firmware Signature (%d bytes):\r\n", SIGNATURE_SIZE);
@@ -155,8 +164,8 @@ bool verify_firmware_signature(optiga_util_t *util)
         printf("%02X", firmware_signature[i]);
     printf("\r\n");
 
-    // Allocate memory and read public key from OID
-    uint8_t public_key[80];
+    // 5. Read public key from OPTIGA OID (if not already provisioned, this will fail)
+    uint8_t public_key[65];  // Standard uncompressed ECC public key (0x04 | X[32] | Y[32])
     uint16_t public_key_len = sizeof(public_key);
 
     optiga_lib_status = optiga_util_read_data(util, SIGNATURE_OID, 0, public_key, &public_key_len);
@@ -166,12 +175,12 @@ bool verify_firmware_signature(optiga_util_t *util)
         return false;
     }
 
-    printf("🔹 Public Key (%d bytes) from OID 0x%04X:\r\n", public_key_len, SIGNATURE_OID);
+    printf("🔹 Public Key from OID 0x%04X:\r\n", SIGNATURE_OID);
     for (int i = 0; i < public_key_len; i++)
         printf("%02X", public_key[i]);
     printf("\r\n");
 
-    // Verify signature
+    // 6. Verify digital signature using OPTIGA crypt
     optiga_crypt_t *me_crypt = optiga_crypt_create(0, optiga_util_callback, NULL);
     if (!me_crypt)
     {
@@ -185,7 +194,7 @@ bool verify_firmware_signature(optiga_util_t *util)
                                sizeof(calc_hash),
                                firmware_signature,
                                SIGNATURE_SIZE,
-                               OPTIGA_CRYPT_OID_DATA,
+                               OPTIGA_CRYPT_OID_DATA,  // Using key stored inside OPTIGA
                                SIGNATURE_OID);
 
     while (optiga_lib_status == OPTIGA_LIB_BUSY)
@@ -329,7 +338,9 @@ int main(void)
 
       /* Execute main OPTIGA logic (write, read, LED control) */
       HAL_Delay(100);
+
       optiga_main_logic();
+
 
 
   /* USER CODE END 2 */
