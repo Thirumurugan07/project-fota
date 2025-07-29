@@ -1,7 +1,7 @@
 ../Core/Src/main.c:88:5:__io_putchar	1
 ../Core/Src/main.c:101:13:optiga_util_callback	1
 ../Core/Src/main.c:106:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:114:6:verify_bootloader_hash	7
+../Core/Src/main.c:114:6:verify_bootloader_hash	5
 ../Core/Src/main.c:157:6:optiga_main_logic	6
 ../Core/Src/main.c:210:6:I2C_Scan	3
 ../Core/Src/main.c:225:5:main	5
