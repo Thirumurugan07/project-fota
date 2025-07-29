@@ -31,7 +31,6 @@
 #include "optiga/optiga_crypt.h"
 #include <stdio.h>
 #include <stdbool.h>
-#include "etx_ota_update.h"
 #include "mbedtls/sha256.h"
 
 #define BOOTLOADER_START_ADDR  0x08020000
@@ -312,44 +311,6 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET );    //Green LED OFF
 
   printf("Starting Bootloader(%d.%d)\r\n", BL_Version[0], BL_Version[1] );
-  GPIO_PinState OTA_Pin_state;
-       uint32_t end_tick = HAL_GetTick() + 3000;   // from now to 3 Seconds
-
-       printf("Press the User Button PC13 to trigger OTA update...\r\n");
-       do
-       {
-         OTA_Pin_state = HAL_GPIO_ReadPin( GPIOC, GPIO_PIN_13 );
-         uint32_t current_tick = HAL_GetTick();
-
-         /* Check the button is pressed or not for 3seconds */
-         if( ( OTA_Pin_state != GPIO_PIN_SET ) || ( current_tick > end_tick ) )
-         {
-           /* Either timeout or Button is pressed */
-           break;
-         }
-       }while( 1 );
-
-       /*Start the Firmware or Application update */
-       if( OTA_Pin_state == GPIO_PIN_RESET )
-       {
-         printf("Starting Firmware Download!!!\r\n");
-         /* OTA Request. Receive the data from the UART4 and flash */
-         if( etx_ota_download_and_flash() != ETX_OTA_EX_OK )
-         {
-           /* Error. Don't process. */
-           printf("OTA Update : ERROR!!! HALT!!!\r\n");
-           while( 1 );
-         }
-         else
-         {
-           /* Reset to load the new application */
-           printf("Firmware update is done!!! Rebooting...\r\n");
-           HAL_NVIC_SystemReset();
-         }
-       }
-
-
-
 
       printf("Powering ON OPTIGA Trust M...\r\n");
 
