@@ -147,14 +147,7 @@ bool verify_firmware_signature(optiga_util_t *util)
     for (int i = 0; i < sizeof(calc_hash); i++)
         printf("%02X", calc_hash[i]);
     printf("\r\n");
-//
-//    // 3. [Optional] Compare to expected hash (e.g. stored at known flash location)
-//    memcpy(expected_hash, (uint8_t *)(BOOTLOADER_START_ADDR), sizeof(expected_hash));
-//    if (memcmp(expected_hash, calc_hash, sizeof(calc_hash)) != 0)
-//    {
-//        printf("❌ Firmware hash mismatch! Aborting.\r\n");
-//        return false;
-//    }
+
 
     // 4. Read firmware signature from flash
     memcpy(firmware_signature, (uint8_t *)(BOOTLOADER_START_ADDR + SIGNATURE_OFFSET), SIGNATURE_SIZE);
@@ -207,7 +200,7 @@ bool verify_firmware_signature(optiga_util_t *util)
         printf("❌ Signature verification FAILED! Status: 0x%04X\r\n", optiga_lib_status);
         return false;
     }
-
+    if (firmware_signature[0] != 0x30) return false;
     printf("✅ Firmware signature verified successfully.\r\n");
     return true;
 }
@@ -259,8 +252,9 @@ void optiga_main_logic(void)
     if (verify_firmware_integrity(me_util)) {
             goto_application();
         } else {
+        	printf("Firmware came from Unauthenticated server....\r\n");
             while (1) {
-                HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
                 HAL_Delay(500);
             }
         }
