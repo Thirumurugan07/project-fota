@@ -70,6 +70,9 @@ pal_status_t pal_logger_write(void * p_logger_context, const uint8_t * p_log_dat
 
     do
     {
+
+        HAL_UART_Transmit(&huart2, (uint8_t*)p_log_data, log_data_length, HAL_MAX_DELAY);
+        return PAL_STATUS_SUCCESS;
         // !!!OPTIGA_LIB_PORTING_REQUIRED
     } while(0);
     return ((pal_status_t)return_status);

@@ -31,6 +31,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>optiga_crypt.c</name>
+			<type>1</type>
+			<location>/Users/thirumurugans/Developer/Projects/FOTA/OPTIGA/optiga/crypt/optiga_crypt.c</location>
+		</link>
+		<link>
 			<name>Core/Src/example_optiga_init_deinit.c</name>
 			<type>1</type>
 			<location>/Users/thirumurugans/Downloads/example_optiga_init_deinit.c</location>

@@ -10,7 +10,8 @@ Core/Src/optiga_crypt.o: \
  ../optiga/include/optiga/common/optiga_lib_logger.h \
  ../optiga/include/optiga/common/optiga_lib_common_internal.h \
  ../optiga/include/optiga/pal/pal_os_memory.h \
- ../optiga/include/optiga/pal/pal.h
+ ../optiga/include/optiga/pal/pal.h \
+ ../optiga/include/optiga/optiga_lib_config_m_v3.h
 ../optiga/include/optiga/optiga_crypt.h:
 ../optiga/include/optiga/cmd/optiga_cmd.h:
 ../optiga/include/optiga/common/optiga_lib_common.h:
@@ -22,3 +23,4 @@ Core/Src/optiga_crypt.o: \
 ../optiga/include/optiga/common/optiga_lib_common_internal.h:
 ../optiga/include/optiga/pal/pal_os_memory.h:
 ../optiga/include/optiga/pal/pal.h:
+../optiga/include/optiga/optiga_lib_config_m_v3.h:

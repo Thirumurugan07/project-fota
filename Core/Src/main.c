@@ -1,47 +1,47 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "mbedtls/sha256.h"
+#include "optiga/optiga_crypt.h"
 #include "optiga/optiga_example.h"
 #include "optiga/optiga_util.h"
 #include "optiga/pal/pal.h"
-#include "optiga/pal/pal_i2c.h"
 #include "optiga/pal/pal_gpio.h"
+#include "optiga/pal/pal_i2c.h"
 #include "optiga/pal/pal_os_event.h"
 #include "optiga/pal/pal_os_timer.h"
-#include "optiga/optiga_crypt.h"
-#include <stdio.h>
 #include <stdbool.h>
-#include "mbedtls/sha256.h"
+#include <stdio.h>
 
-#define BOOTLOADER_START_ADDR  0x08020000
-#define SHA_SIZE               32
-#define HASH_CALC_LEN          (13028)
+#define BOOTLOADER_START_ADDR 0x08020000
+#define SHA_SIZE 32
+#define HASH_CALC_LEN (13028)
 
 /* Update or Add these definitions */
-#define SIGNATURE_SIZE          71
-#define SIGNATURE_OFFSET        13028  // location of signature in OTA buffer
-#define FIRMWARE_TOTAL_SIZE     13099
-#define SIGNATURE_OID    0xE0E8 // assuming public key is in 0xE0F1
+#define SIGNATURE_SIZE 71
+#define SIGNATURE_OFFSET 13028 // location of signature in OTA buffer
+#define FIRMWARE_TOTAL_SIZE 13099
+#define SIGNATURE_OID 0xE0E8 // assuming public key is in 0xE0F1
 #define APPLICATION_ADDRESS 0x08020000
 
 typedef void (*pFunction)(void);
@@ -55,9 +55,9 @@ static uint8_t firmware_signature[SIGNATURE_SIZE];
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define MAJOR 1   // BL Major version Number
-#define MINOR 3   // BL Minor version Number
-const uint8_t BL_Version[2] = { MAJOR, MINOR };
+#define MAJOR 1 // BL Major version Number
+#define MINOR 3 // BL Minor version Number
+const uint8_t BL_Version[2] = {MAJOR, MINOR};
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -89,16 +89,15 @@ static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-static void goto_application( void );
+static void goto_application(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 #ifdef __GNUC__
-int __io_putchar(int ch)
-{
-    HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
-    return ch;
+int __io_putchar(int ch) {
+  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  return ch;
 }
 #endif
 
@@ -106,178 +105,150 @@ extern pal_gpio_t optiga_vdd_0;
 extern pal_gpio_t optiga_reset_0;
 extern pal_i2c_t optiga_pal_i2c_context_0;
 static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
-//void (*pFunction)(void);
+// void (*pFunction)(void);
 //
-//pFunction jumpToApplication;
-//uint32_t jumpAddress;
-// Async callback
-static void optiga_util_callback(void *context, optiga_lib_status_t return_status)
-{
-    optiga_lib_status = return_status;
+// pFunction jumpToApplication;
+// uint32_t jumpAddress;
+//  Async callback
+static void optiga_util_callback(void *context,
+                                 optiga_lib_status_t return_status) {
+  optiga_lib_status = return_status;
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2)
-    {
-        pal_os_event_timer_tick();
-    }
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM2) {
+    pal_os_event_timer_tick();
+  }
 }
 
+bool verify_firmware_signature(optiga_util_t *util) {
+  uint8_t firmware_data[HASH_CALC_LEN];
+  uint8_t calc_hash[32];
+  uint8_t expected_hash[32]; // Optional expected hash stored in flash
+  uint8_t firmware_signature[SIGNATURE_SIZE];
 
-bool verify_firmware_signature(optiga_util_t *util)
-{
-    uint8_t firmware_data[HASH_CALC_LEN];
-    uint8_t calc_hash[32];
-    uint8_t expected_hash[32];  // Optional expected hash stored in flash
-    uint8_t firmware_signature[SIGNATURE_SIZE];
+  // 1. Read firmware data from flash
+  memcpy(firmware_data, (uint8_t *)BOOTLOADER_START_ADDR, HASH_CALC_LEN);
 
-    // 1. Read firmware data from flash
-    memcpy(firmware_data, (uint8_t *)BOOTLOADER_START_ADDR, HASH_CALC_LEN);
+  // 2. Calculate SHA-256 hash of the firmware
+  mbedtls_sha256_context ctx;
+  mbedtls_sha256_init(&ctx);
+  mbedtls_sha256_starts_ret(&ctx, 0);
+  mbedtls_sha256_update_ret(&ctx, firmware_data, HASH_CALC_LEN);
+  mbedtls_sha256_finish_ret(&ctx, calc_hash);
+  mbedtls_sha256_free(&ctx);
 
-    // 2. Calculate SHA-256 hash of the firmware
-    mbedtls_sha256_context ctx;
-    mbedtls_sha256_init(&ctx);
-    mbedtls_sha256_starts_ret(&ctx, 0);
-    mbedtls_sha256_update_ret(&ctx, firmware_data, HASH_CALC_LEN);
-    mbedtls_sha256_finish_ret(&ctx, calc_hash);
-    mbedtls_sha256_free(&ctx);
-
-    printf("\r\n🔹 Calculated SHA-256 Hash:\r\n");
-    for (int i = 0; i < sizeof(calc_hash); i++)
-        printf("%02X", calc_hash[i]);
-    printf("\r\n");
+  // 4. Read firmware signature from flash
+  memcpy(firmware_signature,
+         (uint8_t *)(BOOTLOADER_START_ADDR + SIGNATURE_OFFSET), SIGNATURE_SIZE);
 
 
-    // 4. Read firmware signature from flash
-    memcpy(firmware_signature, (uint8_t *)(BOOTLOADER_START_ADDR + SIGNATURE_OFFSET), SIGNATURE_SIZE);
 
-    printf("🔹 Firmware Signature (%d bytes):\r\n", SIGNATURE_SIZE);
-    for (int i = 0; i < SIGNATURE_SIZE; i++)
-        printf("%02X", firmware_signature[i]);
-    printf("\r\n");
+  // 5. Read public key from OPTIGA OID (if not already provisioned, this will
+  // fail)
+  uint8_t public_key[65]; // Standard uncompressed ECC public key (0x04 | X[32]
+                          // | Y[32])
+  uint16_t public_key_len = sizeof(public_key);
 
-    // 5. Read public key from OPTIGA OID (if not already provisioned, this will fail)
-    uint8_t public_key[65];  // Standard uncompressed ECC public key (0x04 | X[32] | Y[32])
-    uint16_t public_key_len = sizeof(public_key);
+  optiga_lib_status = optiga_util_read_data(util, SIGNATURE_OID, 0, public_key,
+                                            &public_key_len);
+  if (optiga_lib_status != OPTIGA_LIB_SUCCESS) {
+    printf("❌ Failed to read public key from OID 0x%04X\r\n", SIGNATURE_OID);
+    return false;
+  }
 
-    optiga_lib_status = optiga_util_read_data(util, SIGNATURE_OID, 0, public_key, &public_key_len);
-    if (optiga_lib_status != OPTIGA_LIB_SUCCESS)
-    {
-        printf("❌ Failed to read public key from OID 0x%04X\r\n", SIGNATURE_OID);
-        return false;
-    }
 
-    printf("🔹 Public Key from OID 0x%04X:\r\n", SIGNATURE_OID);
-    for (int i = 0; i < public_key_len; i++)
-        printf("%02X", public_key[i]);
-    printf("\r\n");
 
-    // 6. Verify digital signature using OPTIGA crypt
-    optiga_crypt_t *me_crypt = optiga_crypt_create(0, optiga_util_callback, NULL);
-    if (!me_crypt)
-    {
-        printf("❌ Failed to create OPTIGA crypt instance!\r\n");
-        return false;
-    }
+  // 6. Verify digital signature using OPTIGA crypt
+  optiga_crypt_t *me_crypt = optiga_crypt_create(0, optiga_util_callback, NULL);
+  if (!me_crypt) {
+    printf("❌ Failed to create OPTIGA crypt instance!\r\n");
+    return false;
+  }
 
-    optiga_lib_status = OPTIGA_LIB_BUSY;
-    optiga_crypt_ecdsa_verify(me_crypt,
-                               calc_hash,
-                               sizeof(calc_hash),
-                               firmware_signature,
-                               SIGNATURE_SIZE,
-                               OPTIGA_CRYPT_OID_DATA,  // Using key stored inside OPTIGA
-                               SIGNATURE_OID);
+  optiga_lib_status = OPTIGA_LIB_BUSY;
+  optiga_crypt_ecdsa_verify(
+      me_crypt, calc_hash, sizeof(calc_hash), firmware_signature,
+      SIGNATURE_SIZE,
+      OPTIGA_CRYPT_OID_DATA, // Using key stored inside OPTIGA
+      SIGNATURE_OID);
 
-    while (optiga_lib_status == OPTIGA_LIB_BUSY)
-        pal_os_event_trigger_registered_callback();
+  while (optiga_lib_status == OPTIGA_LIB_BUSY)
+    pal_os_event_trigger_registered_callback();
 
-    optiga_crypt_destroy(me_crypt);
+  optiga_crypt_destroy(me_crypt);
 
-    if (optiga_lib_status != OPTIGA_LIB_SUCCESS)
-    {
-        printf("❌ Signature verification FAILED! Status: 0x%04X\r\n", optiga_lib_status);
-        return false;
-    }
-    if (firmware_signature[0] != 0x30) return false;
-    printf("✅ Firmware signature verified successfully.\r\n");
-    return true;
+  if (optiga_lib_status != OPTIGA_LIB_SUCCESS) {
+    printf("❌ Signature verification FAILED! Status: 0x%04X\r\n",
+           optiga_lib_status);
+    return false;
+  }
+  printf("✅ Firmware signature verified successfully.\r\n");
+  return true;
 }
 /* Replace verify_bootloader_hash() with combined hash+signature check */
-bool verify_firmware_integrity(optiga_util_t *util)
-{
-    return verify_firmware_signature(util);
+bool verify_firmware_integrity(optiga_util_t *util) {
+  return verify_firmware_signature(util);
 }
-void optiga_main_logic(void)
-{
-    optiga_util_t *me_util = NULL;
-    optiga_lib_status_t return_status = OPTIGA_UTIL_ERROR;
+void optiga_main_logic(void) {
+  optiga_util_t *me_util = NULL;
+  optiga_lib_status_t return_status = OPTIGA_UTIL_ERROR;
 
-    me_util = optiga_util_create(0, optiga_util_callback, NULL);
-    if (!me_util)
-    {
-        printf("Failed to create OPTIGA util instance.\r\n");
-        return;
+  me_util = optiga_util_create(0, optiga_util_callback, NULL);
+  if (!me_util) {
+    printf("Failed to create OPTIGA util instance.\r\n");
+    return;
+  }
+
+  // Retry loop to initialize OPTIGA
+  while (1) {
+    optiga_lib_status = OPTIGA_LIB_BUSY;
+    return_status = optiga_util_open_application(me_util, 0);
+    if (return_status != OPTIGA_LIB_SUCCESS) {
+      printf(
+          "optiga_util_open_application() failed immediately. Retrying...\r\n");
+      continue;
     }
-
-    // Retry loop to initialize OPTIGA
-    while (1)
-    {
-        optiga_lib_status = OPTIGA_LIB_BUSY;
-        return_status = optiga_util_open_application(me_util, 0);
-        if (return_status != OPTIGA_LIB_SUCCESS)
-        {
-            printf("optiga_util_open_application() failed immediately. Retrying...\r\n");
-            continue;
-        }
-        HAL_Delay(100);
-        while (optiga_lib_status == OPTIGA_LIB_BUSY)
-        {
-            pal_os_event_trigger_registered_callback(); // CRUCIAL for bare metal
-        }
-        HAL_Delay(100);
-        if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-        {
-            printf("OPTIGA Trust M initialized successfully.\r\n");
-            break;
-        }
-        else
-        {
-            printf("OPTIGA init async failed: 0x%04X. Retrying...\r\n", optiga_lib_status);
-            HAL_Delay(2000);
-        }
+    HAL_Delay(100);
+    while (optiga_lib_status == OPTIGA_LIB_BUSY) {
+      pal_os_event_trigger_registered_callback(); // CRUCIAL for bare metal
     }
+    HAL_Delay(100);
+    if (optiga_lib_status == OPTIGA_LIB_SUCCESS) {
+      printf("OPTIGA Trust M initialized successfully.\r\n");
+      break;
+    } else {
+      printf("OPTIGA init async failed: 0x%04X. Retrying...\r\n",
+             optiga_lib_status);
+      HAL_Delay(2000);
+    }
+  }
 
-    if (verify_firmware_integrity(me_util)) {
-            goto_application();
-        } else {
-        	printf("Firmware came from Unauthenticated server....\r\n");
-            while (1) {
-                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-                HAL_Delay(500);
-            }
-        }
+  if (verify_firmware_integrity(me_util)) {
+    goto_application();
+  } else {
+    printf("Firmware came from Unauthenticated server....\r\n");
+    while (1) {
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+      HAL_Delay(500);
+    }
+  }
 }
-
 
 void I2C_Scan(I2C_HandleTypeDef *hi2c) {
-    printf("Scanning I2C...\r\n");
-    for (uint8_t addr = 1; addr < 128; addr++) {
-        if (HAL_I2C_IsDeviceReady(hi2c, addr << 1, 1, 10) == HAL_OK) {
-            printf("Device found at 0x%02X\r\n", addr);
-        }
+  printf("Scanning I2C...\r\n");
+  for (uint8_t addr = 1; addr < 128; addr++) {
+    if (HAL_I2C_IsDeviceReady(hi2c, addr << 1, 1, 10) == HAL_OK) {
+      printf("Device found at 0x%02X\r\n", addr);
     }
+  }
 }
 
-
-
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
 
   /* USER CODE BEGIN 1 */
 
@@ -285,7 +256,8 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick.
+   */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -311,38 +283,35 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM2_IRQn);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET );    //Green LED OFF
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // Green LED OFF
 
-  printf("Starting Bootloader(%d.%d)\r\n", BL_Version[0], BL_Version[1] );
+  printf("Starting Bootloader(%d.%d)\r\n", BL_Version[0], BL_Version[1]);
 
-      printf("Powering ON OPTIGA Trust M...\r\n");
+  printf("Powering ON OPTIGA Trust M...\r\n");
 
-      /* Power ON the OPTIGA Trust M chip */
-      pal_gpio_set_high(&optiga_vdd_0);
-      printf("Resetting OPTIGA...\r\n");
-      pal_gpio_set_low(&optiga_reset_0);
-      HAL_Delay(10);
-      pal_gpio_set_high(&optiga_reset_0);
-      HAL_Delay(10);
+  /* Power ON the OPTIGA Trust M chip */
+  pal_gpio_set_high(&optiga_vdd_0);
+  printf("Resetting OPTIGA...\r\n");
+  pal_gpio_set_low(&optiga_reset_0);
+  HAL_Delay(10);
+  pal_gpio_set_high(&optiga_reset_0);
+  HAL_Delay(10);
 
-      /* Optional: Scan I2C to check if device responds */
-      I2C_Scan(&hi2c1);
+  /* Optional: Scan I2C to check if device responds */
+  I2C_Scan(&hi2c1);
 
-      printf("Starting OPTIGA Trust M logic...\r\n");
+  printf("Starting OPTIGA Trust M logic...\r\n");
 
-      /* Execute main OPTIGA logic (write, read, LED control) */
-      HAL_Delay(100);
+  /* Execute main OPTIGA logic (write, read, LED control) */
+  HAL_Delay(100);
 
-      optiga_main_logic();
-
-
+  optiga_main_logic();
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  while (1) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -351,22 +320,21 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -376,44 +344,40 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
   RCC_OscInitStruct.PLL.PLLQ = 7;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK |
+                                RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
     Error_Handler();
   }
 }
 
 /**
-  * @brief NVIC Configuration.
-  * @retval None
-  */
-static void MX_NVIC_Init(void)
-{
+ * @brief NVIC Configuration.
+ * @retval None
+ */
+static void MX_NVIC_Init(void) {
   /* I2C1_EV_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(I2C1_EV_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void) {
 
   /* USER CODE BEGIN I2C1_Init 0 */
 
@@ -431,23 +395,20 @@ static void MX_I2C1_Init(void)
   hi2c1.Init.OwnAddress2 = 0;
   hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
   hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM2_Init(void)
-{
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM2_Init(void) {
 
   /* USER CODE BEGIN TIM2_Init 0 */
 
@@ -465,34 +426,29 @@ static void MX_TIM2_Init(void)
   htim2.Init.Period = 9;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART2_UART_Init(void) {
 
   /* USER CODE BEGIN USART2_Init 0 */
 
@@ -509,26 +465,23 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.Mode = UART_MODE_TX_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
+  if (HAL_UART_Init(&huart2) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -537,7 +490,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|LD2_Pin|GPIO_PIN_8, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4 | LD2_Pin | GPIO_PIN_8, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -546,7 +499,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA4 LD2_Pin PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|LD2_Pin|GPIO_PIN_8;
+  GPIO_InitStruct.Pin = GPIO_PIN_4 | LD2_Pin | GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -556,57 +509,55 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
 
+static void goto_application(void) {
+  printf("Jumping to application...\r\n");
 
-static void goto_application(void)
-{
-    printf("Jumping to application...\r\n");
+  // Check if the value at the application's start is a valid stack pointer (RAM
+  // range)
+  jumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
+  /* Jump to user application */
+  jumpToApplication = (pFunction)jumpAddress;
+  /* Initialize user application's Stack Pointer */
+  __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
+  jumpToApplication();
 
-    // Check if the value at the application's start is a valid stack pointer (RAM range)
-    jumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
-   	      /* Jump to user application */
-   	      jumpToApplication = (pFunction)jumpAddress;
-   	      /* Initialize user application's Stack Pointer */
-   	      __set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
-   	      jumpToApplication();
-
-    while (1); // should never be hit if jump is successful
+  while (1)
+    ; // should never be hit if jump is successful
 }
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
-  {
+  while (1) {
   }
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+void assert_failed(uint8_t *file, uint32_t line) {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  /* User can add his own implementation to report the file name and line
+     number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
+     line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

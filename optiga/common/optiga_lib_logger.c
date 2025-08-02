@@ -43,7 +43,7 @@
 
 #define OPTIGA_LOGGER_NEW_LINE_CHAR          0x0D, 0x0A
 
-extern pal_logger_t logger_console;
+ pal_logger_t logger_console;
 
 /*Convert Byte to HexString */
 #define OPTIGA_LOGGER_CONVERT_BYTE_TO_HEX(hex_byte, p_hex_string, index) \

@@ -132,13 +132,13 @@ extern "C" {
 /// @cond
 #ifdef OPTIGA_LIB_ENABLE_LOGGING
     /** @brief Macro to enable logger for Util service */
-    //#define OPTIGA_LIB_ENABLE_UTIL_LOGGING
+    #define OPTIGA_LIB_ENABLE_UTIL_LOGGING
     /** @brief Macro to enable logger for Crypt service */
-    //#define OPTIGA_LIB_ENABLE_CRYPT_LOGGING
+    #define OPTIGA_LIB_ENABLE_CRYPT_LOGGING
     /** @brief Macro to enable logger for Command layer */
-    //#define OPTIGA_LIB_ENABLE_CMD_LOGGING
+    #define OPTIGA_LIB_ENABLE_CMD_LOGGING
     /** @brief Macro to enable logger for Communication layer */
-    //#define OPTIGA_LIB_ENABLE_COMMS_LOGGING
+    #define OPTIGA_LIB_ENABLE_COMMS_LOGGING
 #endif
 /// @endcond
 
@@ -149,8 +149,8 @@ extern "C" {
     #define EXAMPLE_OPTIGA_UTIL_PROTECTED_UPDATE_OBJECT_KEY_ENABLED    
     /** @brief OPTIGA UTIL metadata object protected update feature enable/disable macro */      
     #define EXAMPLE_OPTIGA_UTIL_PROTECTED_UPDATE_OBJECT_METADATA_ENABLED    
-    
-
+	#define OPTIGA_CRYPT_ECC_GENERATE_KEYPAIR_ENABLED
+	#define OPTIGA_CRYPT_ECDSA_SIGN_ENABLED
 #ifdef __cplusplus
 }
 #endif
