@@ -64,6 +64,11 @@ void optiga_init(void)
     pal_gpio_set_high(&optiga_vdd_0);
     HAL_Delay(10);
 
+    pal_gpio_set_low(&optiga_reset_0);
+    HAL_Delay(10);
+    I2C_Scan(&hi2c1);
+
+
     optiga_lib_status_t return_status;
     me_util = optiga_util_create(0, optiga_util_callback, NULL);
     if (!me_util)
@@ -72,7 +77,7 @@ void optiga_init(void)
         return;
     }
 
-    I2C_Scan(&hi2c1);
+
     printf("Starting OPTIGA Trust M logic...\r\n");
 
     while (1)
@@ -186,7 +191,8 @@ void optiga_deinit(void)
         me_util = NULL;
         printf("✅ OPTIGA util instance destroyed.\r\n");
     }
-
+    pal_gpio_set_high(&optiga_reset_0);
+         HAL_Delay(10);
     // Optional: Power down or reset VDD if needed
     pal_gpio_set_low(&optiga_vdd_0);
     HAL_Delay(10);
