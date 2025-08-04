@@ -44,6 +44,9 @@ Core/Src/optiga_auth.o: ../Core/Src/optiga_auth.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
+ ../Core/Inc/authentication/mbedtls/sha256.h \
+ ../Core/Inc/authentication/mbedtls/config.h \
+ ../Core/Inc/authentication/mbedtls/check_config.h \
  ../optiga/include/optiga/optiga_crypt.h
 ../Core/Inc/authentication/optiga_auth.h:
 ../optiga/include/optiga/optiga_util.h:
@@ -90,4 +93,7 @@ Core/Src/optiga_auth.o: ../Core/Src/optiga_auth.c \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
+../Core/Inc/authentication/mbedtls/sha256.h:
+../Core/Inc/authentication/mbedtls/config.h:
+../Core/Inc/authentication/mbedtls/check_config.h:
 ../optiga/include/optiga/optiga_crypt.h:

@@ -11,7 +11,7 @@
 #include "main.h"
 #include "ymodem/flash_if.h"
 #include "ymodem/common.h"
-
+#include "authentication/optiga_auth.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -49,10 +49,10 @@ void serial_download(void) {
 		    serial_put_string((uint8_t *)"\n\r Size: ");
 		    serial_put_string((uint8_t *)number);
 		    serial_put_string((uint8_t *)" Bytes\r\n");
-		    serial_put_string((uint8_t *)"-------------------\n");
+		    serial_put_string((uint8_t *)"-------------------\r\n");
 	}
 	else if (result == COM_ABORT) {
-		serial_put_string((uint8_t*)"\r\n\nAborted by er.\n\r");
+		serial_put_string((uint8_t*)"\r\n\nAborted by User.\n\r");
 	}
 	else if (result == COM_LIMIT) {
 		serial_put_string((uint8_t*)"\n\n\rThe image size is higher than the allowed space memory!\n\r");
@@ -64,6 +64,26 @@ void serial_download(void) {
 	  {
 		serial_put_string((uint8_t *)"\n\rFailed to receive the file!\n\r");
 	  }
+	  optiga_init();
+
+	if ( verify_firmware_integrity(size) != 0) {
+		optiga_deinit();
+		serial_put_string("Firmware Authenticated!\r\n");
+		serial_put_string((uint8_t *)"Start program execution......\r\n\n");
+		      /* execute the new program */
+		      jumpAddress = *(__IO uint32_t*) (APPLICATION_ADDRESS + 4);
+		      /* Jump to user application */
+		      jumpToApplication = (pFunction)jumpAddress;
+		      /* Initialize user application's Stack Pointer */
+		      __set_MSP(*(__IO uint32_t*) APPLICATION_ADDRESS);
+		      jumpToApplication();
+
+	}
+	else {
+		optiga_deinit();
+		serial_put_string("Firmware Not Authenticated!\r\nHALT!!!\r\n");
+		while (1);
+	}
 }
 
 /**

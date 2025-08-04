@@ -29,6 +29,7 @@ uint16_t UpdateCRC16(uint16_t crc_in, uint8_t byte);
 uint16_t calc_crc16(const uint8_t* p_data, uint32_t size);
 uint8_t CalcChecksum(const uint8_t *p_data, uint32_t size);
 
+
 /**
   * @brief  Receive a packet from sender
   * @param  data
@@ -399,7 +400,7 @@ COM_StatusTypeDef ymodem_receive(uint32_t* p_size) {
             }
         }
     }
-    HAL_Delay(5000);
+    HAL_Delay(3000);
     /* Final status report */
     if (result == COM_OK) {
         serial_put_string((uint8_t*)"\r\nYMODEM Success: ");

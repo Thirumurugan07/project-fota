@@ -8,14 +8,16 @@
 #include "optiga/pal/pal_gpio.h"
 #include "optiga/pal/pal_i2c.h"
 #include "stm32f4xx_hal.h"  // Or your MCU header
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void optiga_main_logic(void);
+void optiga_init(void);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
-
+bool verify_firmware_integrity(uint32_t size);
+void optiga_deinit(void);
 #ifdef __cplusplus
 }
 #endif

@@ -1,6 +1,8 @@
-../Core/Src/optiga_auth.c:32:13:optiga_util_callback	1
-../Core/Src/optiga_auth.c:37:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/optiga_auth.c:45:6:I2C_Scan	3
-../Core/Src/optiga_auth.c:55:13:optiga_crypt_callback	1
-../Core/Src/optiga_auth.c:60:6:hash_firmware_region_and_print	6
-../Core/Src/optiga_auth.c:111:6:optiga_init	5
+../Core/Src/optiga_auth.c:30:13:optiga_util_callback	1
+../Core/Src/optiga_auth.c:35:13:optiga_crypt_callback	1
+../Core/Src/optiga_auth.c:40:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/optiga_auth.c:49:13:I2C_Scan	3
+../Core/Src/optiga_auth.c:62:6:optiga_init	5
+../Core/Src/optiga_auth.c:108:13:verify_firmware_signature	10
+../Core/Src/optiga_auth.c:181:6:optiga_deinit	2
+../Core/Src/optiga_auth.c:196:6:verify_firmware_integrity	1

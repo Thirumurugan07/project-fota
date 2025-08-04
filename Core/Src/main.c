@@ -137,7 +137,6 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET );    //Green LED OFF
 
 
-
    // optiga_main_logic();
     /* Check the GPIO for 3 seconds */
   	//  optiga_main_logic();
@@ -161,7 +160,6 @@ int main(void)
     	  /* Initialise Flash */
     	 	  FLASH_IF_init();
     	 	  /* Display main menu */
-    	 	  optiga_init();
     	 	  main_menu ();
       }
       else {

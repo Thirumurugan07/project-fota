@@ -33,7 +33,21 @@ Core/Src/menu.o: ../Core/Src/menu.c ../Core/Inc/ymodem/ymodem.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/ymodem/ymodem.h ../Core/Inc/main.h \
  ../Core/Inc/ymodem/flash_if.h ../Core/Inc/ymodem/common.h \
- ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f401xe.h
+ ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f401xe.h \
+ ../Core/Inc/authentication/optiga_auth.h \
+ ../optiga/include/optiga/optiga_util.h \
+ ../optiga/include/optiga/cmd/optiga_cmd.h \
+ ../optiga/include/optiga/common/optiga_lib_common.h \
+ ../optiga/include/optiga/optiga_lib_config.h \
+ ../optiga/include/optiga/optiga_lib_config_m_v3.h \
+ ../optiga/include/optiga/common/optiga_lib_types.h \
+ ../optiga/include/optiga/common/optiga_lib_return_codes.h \
+ ../optiga/include/optiga/pal/pal.h \
+ ../optiga/include/optiga/pal/pal_os_event.h \
+ ../optiga/include/optiga/pal/pal_os_timer.h \
+ ../optiga/include/optiga/pal/pal.h \
+ ../optiga/include/optiga/pal/pal_gpio.h \
+ ../optiga/include/optiga/pal/pal_i2c.h
 ../Core/Inc/ymodem/ymodem.h:
 ../Core/Inc/ymodem/menu.h:
 ../Core/Inc/ymodem/flash_if.h:
@@ -73,3 +87,17 @@ Core/Src/menu.o: ../Core/Src/menu.c ../Core/Inc/ymodem/ymodem.h \
 ../Core/Inc/ymodem/flash_if.h:
 ../Core/Inc/ymodem/common.h:
 ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f401xe.h:
+../Core/Inc/authentication/optiga_auth.h:
+../optiga/include/optiga/optiga_util.h:
+../optiga/include/optiga/cmd/optiga_cmd.h:
+../optiga/include/optiga/common/optiga_lib_common.h:
+../optiga/include/optiga/optiga_lib_config.h:
+../optiga/include/optiga/optiga_lib_config_m_v3.h:
+../optiga/include/optiga/common/optiga_lib_types.h:
+../optiga/include/optiga/common/optiga_lib_return_codes.h:
+../optiga/include/optiga/pal/pal.h:
+../optiga/include/optiga/pal/pal_os_event.h:
+../optiga/include/optiga/pal/pal_os_timer.h:
+../optiga/include/optiga/pal/pal.h:
+../optiga/include/optiga/pal/pal_gpio.h:
+../optiga/include/optiga/pal/pal_i2c.h:
