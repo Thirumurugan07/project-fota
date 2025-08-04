@@ -56,8 +56,8 @@ pal_gpio_t optiga_vdd_0 =
 
 pal_gpio_t optiga_reset_0 =
 {
-    .p_gpio_hw = GPIOB,
-    .pin = GPIO_PIN_10
+    .p_gpio_hw = GPIOA,
+    .pin = GPIO_PIN_8
 };
 
 /**

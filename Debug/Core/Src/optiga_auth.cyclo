@@ -1,0 +1,6 @@
+../Core/Src/optiga_auth.c:32:13:optiga_util_callback	1
+../Core/Src/optiga_auth.c:37:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/optiga_auth.c:45:6:I2C_Scan	3
+../Core/Src/optiga_auth.c:55:13:optiga_crypt_callback	1
+../Core/Src/optiga_auth.c:60:6:hash_firmware_region_and_print	6
+../Core/Src/optiga_auth.c:111:6:optiga_init	5

@@ -21,17 +21,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "optiga/optiga_util.h"
-#include "optiga/pal/pal.h"
-#include "optiga/pal/pal_os_event.h"
-#include "optiga/pal/pal_os_timer.h"
-#include "optiga/pal/pal_gpio.h"
-#include "optiga/pal/pal_i2c.h"
+
 #include "ymodem/menu.h"
+#include "authentication/optiga_auth.h"
 #include <stdio.h>
 #include <stdbool.h>
 
-static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
 
 /* USER CODE END Includes */
 
@@ -74,9 +69,7 @@ static void MX_TIM2_Init(void);
 static void MX_CRC_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-static void optiga_util_callback(void *context, optiga_lib_status_t return_status);
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
-void optiga_main_logic();
+
 
 #ifdef __GNUC__
   /* With GCC, small printf (option LD Linker->Libraries->Small printf
@@ -98,10 +91,7 @@ int fputc(int ch, FILE *f)
 /* USER CODE BEGIN 0 */
 extern pFunction jumpToApplication;
 extern uint32_t jumpAddress;
-extern pal_gpio_t optiga_vdd_0;
-extern pal_gpio_t optiga_reset_0;
-extern pal_i2c_t optiga_pal_i2c_context_0;
-static volatile optiga_lib_status_t optiga_lib_status = OPTIGA_LIB_SUCCESS;
+
 /* USER CODE END 0 */
 
 /**
@@ -171,6 +161,7 @@ int main(void)
     	  /* Initialise Flash */
     	 	  FLASH_IF_init();
     	 	  /* Display main menu */
+    	 	  optiga_init();
     	 	  main_menu ();
       }
       else {
@@ -439,61 +430,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-// Async callback
-static void optiga_util_callback(void *context, optiga_lib_status_t return_status)
-{
-    optiga_lib_status = return_status;
-}
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2)
-    {
-        pal_os_event_timer_tick();
-    }
-}
-void optiga_main_logic(void)
-{
-    optiga_util_t *me_util = NULL;
-    optiga_lib_status_t return_status = OPTIGA_UTIL_ERROR;
-
-    me_util = optiga_util_create(0, optiga_util_callback, NULL);
-    if (!me_util)
-    {
-        printf("Failed to create OPTIGA util instance.\r\n");
-        return;
-    }
-
-    // Retry loop to initialize OPTIGA
-    while (1)
-    {
-        optiga_lib_status = OPTIGA_LIB_BUSY;
-        return_status = optiga_util_open_application(me_util, 0);
-        if (return_status != OPTIGA_LIB_SUCCESS)
-        {
-            printf("optiga_util_open_application() failed immediately. Retrying...\r\n");
-            continue;
-        }
-        HAL_Delay(100);
-        while (optiga_lib_status == OPTIGA_LIB_BUSY)
-        {
-            pal_os_event_trigger_registered_callback(); // CRUCIAL for bare metal
-        }
-        if (optiga_lib_status == OPTIGA_LIB_SUCCESS)
-        {
-            printf("OPTIGA Trust M initialized successfully.\r\n");
-            break;
-        }
-        else
-        {
-            printf("OPTIGA init async failed: 0x%04X. Retrying...\r\n", optiga_lib_status);
-            HAL_Delay(2000);
-        }
-    }
-
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);  // Turn ON LED if you want
-
-}
 
 
 //static void goto_application(void)

@@ -70,7 +70,7 @@ pal_status_t pal_logger_write(void * p_logger_context, const uint8_t * p_log_dat
 
     do
     {
-        // !!!OPTIGA_LIB_PORTING_REQUIRED
+        HAL_UART_Transmit(&huart2, p_log_data, log_data_length, HAL_MAX_DELAY);
     } while(0);
     return ((pal_status_t)return_status);
 }
@@ -83,7 +83,7 @@ pal_status_t pal_logger_read(void * p_logger_context, uint8_t * p_log_data, uint
 
     do
     {
-        // !!!OPTIGA_LIB_PORTING_REQUIRED
+        HAL_UART_Receive(&huart2, p_log_data, log_data_length, HAL_MAX_DELAY);
     } while(0);
     return ((pal_status_t)return_status);
 }

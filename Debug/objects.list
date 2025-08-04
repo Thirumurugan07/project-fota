@@ -11,6 +11,7 @@
 "./Core/Src/ifx_i2c_transport_layer.o"
 "./Core/Src/main.o"
 "./Core/Src/menu.o"
+"./Core/Src/optiga_auth.o"
 "./Core/Src/optiga_cmd.o"
 "./Core/Src/optiga_comms_ifx_i2c.o"
 "./Core/Src/optiga_crypt.o"

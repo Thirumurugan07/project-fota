@@ -43,6 +43,9 @@
 extern "C" {
 #endif
 #include "optiga/pal/pal.h"
+#include "stm32f4xx_hal.h"
+
+extern UART_HandleTypeDef huart2;
 
 /** \brief PAL logger context structure */
 typedef struct pal_logger
