@@ -1,0 +1,4 @@
+[submodule "externals/optiga-trust-m"]
+	path = externals/optiga-trust-m
+	url = https://github.com/Infineon/optiga-trust-m.git
+	branch = develop
