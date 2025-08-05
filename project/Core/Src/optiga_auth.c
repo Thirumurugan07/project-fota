@@ -11,7 +11,7 @@
 
 #define APPLICATION_ADDRESS 0x08020000
 #define SHA_SIZE            32
-#define SIGNATURE_SIZE      71
+#define SIGNATURE_SIZE      70
 #define SIGNATURE_OID       0xE0E8
 
 optiga_key_id_t public_key_oid = SIGNATURE_OID;
@@ -149,10 +149,11 @@ static bool verify_firmware_signature(uint32_t size)
         printf("❌ Failed to read public key from OID 0x%04X\r\n", SIGNATURE_OID);
         return false;
     }
+ //   example_optiga_util_read_data();
 
-    printf("✅ Public key (OID 0x%04X):\r\n", SIGNATURE_OID);
-    for (int i = 0; i < public_key_len; i++)
-        printf("%02X", public_key[i]);
+    printf("✅ Signature:\r\n", SIGNATURE_OID);
+    for (int i = 0; i < SIGNATURE_SIZE; i++)
+        printf("%02X", signature[i]);
     printf("\r\n");
 
     // 4. Verify signature using OPTIGA
@@ -179,6 +180,7 @@ static bool verify_firmware_signature(uint32_t size)
         printf("❌ Signature verification FAILED! Status: 0x%04X\r\n", optiga_lib_status);
         return false;
     }
+    if (signature[0] != 0x30) return false;
 
     printf("✅ Firmware signature verified successfully.\r\n");
     return true;
