@@ -3,6 +3,6 @@
 ../Core/Src/optiga_auth.c:40:6:HAL_TIM_PeriodElapsedCallback	2
 ../Core/Src/optiga_auth.c:49:13:I2C_Scan	3
 ../Core/Src/optiga_auth.c:62:6:optiga_init	5
-../Core/Src/optiga_auth.c:113:13:verify_firmware_signature	10
-../Core/Src/optiga_auth.c:186:6:optiga_deinit	2
-../Core/Src/optiga_auth.c:202:6:verify_firmware_integrity	1
+../Core/Src/optiga_auth.c:113:13:verify_firmware_signature	11
+../Core/Src/optiga_auth.c:188:6:optiga_deinit	2
+../Core/Src/optiga_auth.c:204:6:verify_firmware_integrity	1
