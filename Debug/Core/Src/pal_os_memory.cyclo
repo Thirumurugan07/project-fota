@@ -1,5 +1,0 @@
-../Core/Src/pal_os_memory.c:10:8:pal_os_malloc	1
-../Core/Src/pal_os_memory.c:15:8:pal_os_calloc	1
-../Core/Src/pal_os_memory.c:20:6:pal_os_free	1
-../Core/Src/pal_os_memory.c:25:6:pal_os_memcpy	1
-../Core/Src/pal_os_memory.c:30:6:pal_os_memset	1

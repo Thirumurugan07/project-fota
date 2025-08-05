@@ -1,8 +1,0 @@
-../Core/Src/optiga_auth.c:30:13:optiga_util_callback	16	static
-../Core/Src/optiga_auth.c:35:13:optiga_crypt_callback	16	static
-../Core/Src/optiga_auth.c:40:6:HAL_TIM_PeriodElapsedCallback	16	static
-../Core/Src/optiga_auth.c:49:13:I2C_Scan	24	static
-../Core/Src/optiga_auth.c:62:6:optiga_init	16	static
-../Core/Src/optiga_auth.c:113:13:verify_firmware_signature	336	static
-../Core/Src/optiga_auth.c:188:6:optiga_deinit	8	static
-../Core/Src/optiga_auth.c:204:6:verify_firmware_integrity	16	static

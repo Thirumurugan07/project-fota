@@ -1,4 +1,0 @@
-../Core/Src/pal_logger.c:39:14:pal_logger_init	24	static
-../Core/Src/pal_logger.c:52:14:pal_logger_deinit	24	static
-../Core/Src/pal_logger.c:65:14:pal_logger_write	32	static
-../Core/Src/pal_logger.c:78:14:pal_logger_read	32	static
